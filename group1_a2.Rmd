@@ -19,18 +19,25 @@ output: html_document
 # Simple model
 
 ```{r}
-
+print("Hello world")
 ```
 
 # Improved model
 
 ```{r}
-
+# here we are supposed to make a cross validation and maybe some crazy threshold stuff
 ```
 
 # Something
 
 ```{r}
+# Judith
 
+# explain method
+# assess predictions
+# interpret parameters
+# if no parameters: interpret contribution of features
+# make conclusions about predictions
+# use plots
 ```
 
