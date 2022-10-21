@@ -8,7 +8,12 @@ output: html_document
 # Data
 
 ```{r}
+# a bad poem:  
+# there once was a mushroom that we wanted to eat 
+# would it be bitter or would it be sweet 
 
+# a machine learning classifier will help us decide 
+# if we will get high or if we will die
 ```
 
 # Simple model
