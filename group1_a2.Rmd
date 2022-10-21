@@ -5,4 +5,27 @@ date: '2022-10-21'
 output: html_document
 ---
 
-hi judith 
+# Data
+
+```{r}
+
+```
+
+# Simple model
+
+```{r}
+
+```
+
+# Improved model
+
+```{r}
+
+```
+
+# Something
+
+```{r}
+
+```
+
