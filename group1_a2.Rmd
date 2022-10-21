@@ -14,7 +14,7 @@ output: html_document
 # Simple model
 
 ```{r}
-
+print("Hello world")
 ```
 
 # Improved model
