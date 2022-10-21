@@ -1,0 +1,8 @@
+---
+title: "Getting High or Die"
+author: "Alex Carriero"
+date: '2022-10-21'
+output: html_document
+---
+
+hi judith 
