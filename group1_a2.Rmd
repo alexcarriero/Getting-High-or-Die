@@ -15,8 +15,19 @@ output: html_document
 # a machine learning classifier will help us decide 
 # if we will get high or if we will die
 
+
 # soon we will be in the clouds
 # or have nasty stuff in our mouths
+
+# liz truss was defeated by the salad
+
+
+
+# the red ones look nice 
+# the blue ones look bad
+# if but if i pick red and its poisonous
+# i will be sad
+
 ```
 
 # Simple model
