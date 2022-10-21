@@ -5,7 +5,17 @@ date: '2022-10-21'
 output: html_document
 ---
 
+--- title page ---
+--- add the tabs ---
+
+--- library not require ---
+
 # Data
+
+```{r}
+library(tidyverse)
+```
+
 
 ```{r}
 # a bad poem:  
@@ -27,6 +37,11 @@ output: html_document
 # i will be sad
 
 ```
+
+--- detail about relevant columns ---
+--- overkill on tables ---
+
+--- don't needlessly skip simplicity ---
 
 # Simple model
 
@@ -52,4 +67,3 @@ print("Hello world")
 # make conclusions about predictions
 # use plots
 ```
-
