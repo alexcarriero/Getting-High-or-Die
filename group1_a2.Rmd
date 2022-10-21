@@ -26,6 +26,13 @@ output: html_document
 # Something
 
 ```{r}
+# Judith
 
+# explain method
+# assess predictions
+# interpret parameters
+# if no parameters: interpret contribution of features
+# make conclusions about predictions
+# use plots
 ```
 
