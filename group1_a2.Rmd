@@ -11,6 +11,13 @@ output: html_document
 --- library not require ---
 
 # Data
+```{r}
+mushrooms <- read.csv("mushrooms.csv")
+```
+
+```{r}
+mushrooms
+```
 
 ```{r}
 library(tidyverse)
@@ -31,11 +38,11 @@ library(tidyverse)
 # liz truss was defeated by the salad
 
 # a leave node shows if its red or blue
+
 # the red ones look nice 
 # the blue ones look bad
 # if but if i pick red and its poisonous
 # i will be sad
-
 ```
 
 --- detail about relevant columns ---
