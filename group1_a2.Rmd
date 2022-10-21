@@ -25,7 +25,7 @@ output: html_document
 # Improved model
 
 ```{r}
-
+# here we are supposed to make a cross validation and maybe some crazy threshold stuff
 ```
 
 # Something
