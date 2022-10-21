@@ -14,6 +14,9 @@ output: html_document
 
 # a machine learning classifier will help us decide 
 # if we will get high or if we will die
+
+# soon we will be in the clouds
+# or have nasty stuff in our mouths
 ```
 
 # Simple model
