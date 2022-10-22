@@ -16,8 +16,25 @@ library(xgboost)
 library(rpart)
 library(rpart.plot)
 ```
+--- title page ---
+--- add the tabs ---
+
+--- library not require ---
+
 
 # Data
+```{r}
+mushrooms <- read.csv("mushrooms.csv")
+```
+
+```{r}
+mushrooms
+```
+
+```{r}
+library(tidyverse)
+```
+
 
 ```{r}
 # a bad poem:  
@@ -33,12 +50,17 @@ library(rpart.plot)
 # liz truss was defeated by the salad
 
 # a leave node shows if its red or blue
+
 # the red ones look nice 
 # the blue ones look bad
 # if but if i pick red and its poisonous
 # i will be sad
-
 ```
+
+--- detail about relevant columns ---
+--- overkill on tables ---
+
+--- don't needlessly skip simplicity ---
 
 # Simple model
 
@@ -64,6 +86,7 @@ print("Hello world")
 # make conclusions about predictions
 # use plots
 ```
+
 
 
 
@@ -162,4 +185,3 @@ model = xgb.train(data = xgb_train, max.depth = 3, watchlist=watchlist, nrounds 
 final = xgboost(data = xgb_train, max.depth = 3, nrounds = 96, verbose = 0)
 
 ```
-
