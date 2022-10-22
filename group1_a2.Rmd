@@ -13,6 +13,8 @@ library(MASS)
 library(pROC)
 library(randomForest)
 library(xgboost)
+library(rpart)
+library(rpart.plot)
 ```
 
 # Data
@@ -85,38 +87,6 @@ names(mushrooms_tidy) <- gsub(x = names(mushrooms_tidy), pattern = "-", replacem
 # look at the data
 describe(mushrooms_tidy)
 
-# Simple model 2
-M1a <- glm(class ~ ., data = mushrooms_tidy, family = "binomial")
-summary(M1a)
-
-pred_prob <- predict(M1a,type = "response")
-pred_lr   <- factor(pred_prob > .5)
-table(true = mushrooms_tidy$class, predicted = pred_lr)
-
-roc_lr1 <- roc(mushrooms_tidy$class, pred_prob)
-ggroc(roc_lr1) + theme_minimal() + labs(title = "LR1")
-
-# Remove the NA's
-M1b <- glm(class ~ . -`stalk-color-above-ring` -`stalk-color-below-ring` - `stalk-color-below-ring` - `stalk-color-below-ring` - `ring-type` - `ring-number`, data = mushrooms_tidy, family = "binomial")
-summary(M1b)
-
-# Simple model 2
-M2a <- lda(class ~ ., data = mushrooms_tidy)
-pred_lda <- predict(M2a)
-table(true = mushrooms_tidy$class, predicted = predict(M2a)$class)
-
-# Improved model 1
-M3a <- rpart(class ~ ., data = mushrooms_tidy)
-rpart.plot(M3a)
-
-# Improved model 2
-M3b <- rpart(class ~ ., data = mushrooms_tidy, control = rpart.control(minbucket = 1, cp = 0)) 
-rpart.plot(M3b)
-
-# Improved model 3
-M3c <- randomForest(class ~ ., data = mushrooms_tidy)
-M3c
-
 # SPLIT THE DATA
 
 #make this example reproducible
@@ -124,16 +94,72 @@ set.seed(0)
 
 mushrooms_tidy_split <- 
   mushrooms_tidy %>% 
-  mutate(split = sample(rep(c("train", "test"), times = c(6000, 2124))))
+  mutate(split = sample(rep(c("train", "test"), times = c(6500, 1624))))
 
 mushrooms_train <- 
   mushrooms_tidy_split %>% 
-  filter(split == "train") #%>% 
-  #select(-split)
+  filter(split == "train") %>%
+  dplyr::select(-split)
 
 mushrooms_test <- 
   mushrooms_tidy_split %>% 
-  filter(split == "test") #%>% 
-  #select(-split)
+  filter(split == "test") %>% 
+  dplyr::select(-split)
+
+# Simple model 2 logistig regression
+M1a <- glm(class ~ ., data = mushrooms_train, family = "binomial")
+summary(M1a)
+
+pred_prob <- predict(M1a, newdata = mushrooms_test,type = "response")
+pred_lr   <- factor(pred_prob > .5)
+table(true = mushrooms_test$class, predicted = pred_lr)
+
+roc_lr1 <- roc(mushrooms_test$class, pred_prob)
+ggroc(roc_lr1) + theme_minimal() + labs(title = "LR1")
+
+# Simple model 2 LDA
+M2a <- lda(class ~ ., data = mushrooms_train)
+pred_lda <- predict(M2a, newdata = mushrooms_test)
+table(true = mushrooms_test$class, predicted = pred_lda$class)
+
+# Improved model 1 Tree
+M3a <- rpart(class ~ ., data = mushrooms_tidy)
+rpart.plot(M3a)
+
+# Improved model 2 Free tree
+M3b <- rpart(class ~ ., data = mushrooms_tidy, control = rpart.control(minbucket = 1, cp = 0)) 
+rpart.plot(M3b)
+
+# Improved model 3 Random forest
+M3c <- randomForest(class ~ ., data = mushrooms_tidy)
+M3c
+
+# Improved model 4 XGboost
+
+# select the predictors and outcomes
+mushrooms_train_x <- mushrooms_train %>% 
+  dplyr::select(-class)
+mushrooms_train_y <- mushrooms_train %>% 
+  dplyr::select(class)
+  
+mushrooms_test_x <- mushrooms_test %>% 
+  dplyr::select(-class)
+mushrooms_test_y <- mushrooms_test %>% 
+  dplyr::select(class)
+
+#define final training and testing sets
+xgb_train = xgb.DMatrix(data = data.matrix(mushrooms_train_x), label = data.matrix(mushrooms_train_y))
+xgb_test = xgb.DMatrix(data =  data.matrix(mushrooms_test_x), label =  data.matrix(mushrooms_test_y))
+
+#define watchlist
+watchlist = list(train=xgb_train, test=xgb_test)
+
+#fit XGBoost model and display training and testing data at each round
+model = xgb.train(data = xgb_train, max.depth = 3, watchlist=watchlist, nrounds = 100)
+
+# the RSME starts to increase after 96
+# define final model
+final = xgboost(data = xgb_train, max.depth = 3, nrounds = 96, verbose = 0)
+
 ```
 
