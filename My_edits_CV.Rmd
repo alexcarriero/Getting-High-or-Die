@@ -1,0 +1,387 @@
+---
+title: "My editions"
+author: "Christoph Völtzke"
+date: "2022-10-23"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Attribute Information: (classes: edible=e, poisonous=p)
+
+$cap-shape$: bell=b,conical=c,convex=x,flat=f, knobbed=k,sunken=s
+$cap-surface$: fibrous=f,grooves=g,scaly=y,smooth=s
+$cap-color$: brown=n,buff=b,cinnamon=c,gray=g,green=r,pink=p,purple=u,red=e,white=w,yellow=y
+$bruises$: bruises=t,no=f
+$odor$: almond=a,anise=l,creosote=c,fishy=y,foul=f,musty=m,none=n,pungent=p,spicy=s
+$gill-attachment$: attached=a,descending=d,free=f,notched=n
+$gill-spacing$: close=c,crowded=w,distant=d
+$gill-size$: broad=b,narrow=n
+$gill-color$: black=k,brown=n,buff=b,chocolate=h,gray=g, green=r,orange=o,pink=p,purple=u,red=e,white=w,yellow=y
+$stalk-shape$: enlarging=e,tapering=t
+$stalk-root$: bulbous=b,club=c,cup=u,equal=e,rhizomorphs=z,rooted=r,missing=?
+$stalk-surface-above-ring$: fibrous=f,scaly=y,silky=k,smooth=s
+$stalk-surface-below-ring$: fibrous=f,scaly=y,silky=k,smooth=s
+$stalk-color-above-ring$: brown=n,buff=b,cinnamon=c,gray=g,orange=o,pink=p,red=e,white=w,yellow=y
+$stalk-color-below-ring$: brown=n,buff=b,cinnamon=c,gray=g,orange=o,pink=p,red=e,white=w,yellow=y
+$veil-type$: partial=p,universal=u
+$veil-color$: brown=n,orange=o,white=w,yellow=y
+$ring-number$: none=n,one=o,two=t
+$ring-type$: cobwebby=c,evanescent=e,flaring=f,large=l,none=n,pendant=p,sheathing=s,zone=z
+$spore-print-color$: black=k,brown=n,buff=b,chocolate=h,green=r,orange=o,purple=u,white=w,yellow=y
+$population$: abundant=a,clustered=c,numerous=n,scattered=s,several=v,solitary=y
+$habitat$: grasses=g,leaves=l,meadows=m,paths=p,urban=u,waste=w,woods=d
+
+```{r}
+# packages
+library(readr)
+library(tidyverse)
+library(class)
+library(ISLR)
+library(ggplot2)
+library(MASS)
+library(jtools) #for transformaing model summaries
+library(pROC)
+```
+
+```{r}
+set.seed(14)
+```
+
+```{r}
+# loading the data
+mushrooms <- read_csv("mushrooms.csv")
+```
+
+```{r}
+# data manipulation
+names(mushrooms) <- gsub(x = names(mushrooms), pattern = "\\-", replacement = "_")  
+mushrooms <- na.exclude(mushrooms)
+mushrooms <- mushrooms %>% mutate_if(is.character,as.factor)
+
+split <- c(rep("train", round(nrow(mushrooms)*0.7,0)), rep("valid", round(nrow(mushrooms)*0.3,0)))
+mushrooms <- mushrooms %>% mutate(split = sample(split))
+
+mushrooms_train <- mushrooms %>% filter(split == "train") %>% dplyr::select(-split,-veil_type)
+mushrooms_valid <- mushrooms %>% filter(split == "valid") %>% dplyr::select(-split,-veil_type)
+```
+
+```{r}
+# summary
+head(mushrooms_train)
+summary(mushrooms)
+```
+
+# Simple model
+EXAMPLARY TEXT STOLEN FROM TEXTBOOK
+We could then fit a linear regression to this binary response, and predict edible if Y > 0.5 and poisonous otherwise. In the binary case it is not hard to show that even if we flip the above coding, linear regression will
+produce the same final predictions. For a binary response with a 0/1 coding as above, regression by least
+squares is not completely unreasonable: it can be shown that the Xβˆ obtained using linear regression is in fact an estimate of Pr(edible|X) in this special case. However, if we use linear regression, some of our estimates might be outside the [0, 1] interval (see Figure 4.2), making them hard to interpret as probabilities!
+
+
+```{r}
+# all predictors. But apparently model doesn't converge
+fit0 <- glm(class ~ ., family = binomial, data=mushrooms_train)
+
+# Train data table
+prob_lr <- predict(fit0, type = "response")
+pred_lr <- ifelse(prob_lr > .5, 1, 0)
+
+table(true = mushrooms_train$class, pred = pred_lr)
+
+# Validation data table
+pred_prob <- predict(fit0, newdata = mushrooms_valid, type = "response")
+pred_lr   <- factor(pred_prob > .5, labels = c("No", "Yes"))
+
+table(true = mushrooms_valid$class, predicted = pred_lr)
+```
+```{r}
+# model with many predictors, mainly used in my analysis
+fit1 <- glm(class ~ cap_shape+cap_surface+habitat+ring_type+gill_spacing+gill_size+stalk_shape+stalk_surface_above_ring+stalk_surface_below_ring, family = binomial, data=mushrooms_train)
+#summary(fit1)
+#summ(fit1, exp=T)
+
+# Train data table
+prob_lr <- predict(fit1, type = "response")
+pred_lr <- ifelse(prob_lr > .5, 1, 0)
+
+table(true = mushrooms_train$class, pred = pred_lr)
+
+# Validation data table
+pred_prob <- predict(fit1, newdata = mushrooms_valid, type = "response")
+pred_lr   <- factor(pred_prob > .5, labels = c("No", "Yes"))
+
+table(true = mushrooms_valid$class, predicted = pred_lr)
+```
+
+```{r}
+# alternative, simpler model
+fit2 <- glm(class ~ gill_spacing+gill_size+stalk_shape+stalk_surface_above_ring+stalk_surface_below_ring, family = binomial, data=mushrooms_train)
+#summary(fit2)
+#summ(fit2, exp=T)
+
+# Train data table
+prob_lr <- predict(fit2, type = "response")
+pred_lr <- ifelse(prob_lr > .5, 1, 0)
+
+table(true = mushrooms_train$class, pred = pred_lr)
+
+# Validation data table
+pred_prob <- predict(fit2, newdata = mushrooms_valid, type = "response")
+pred_lr   <- factor(pred_prob > .5, labels = c("No", "Yes"))
+
+table(true = mushrooms_valid$class, predicted = pred_lr)
+```
+
+### Interpretations for categorical predictors (Example)
+EXAMPLARY TEXT STOLEN FROM TEXTBOOK
+The negative coefficient for student in
+the multiple logistic regression indicates that for a fixed value of balance
+and income, a student is less likely to default than a non-student. Indeed,
+we observe from the left-hand panel of Figure 4.3 that the student default
+rate is at or below that of the non-student default rate for every value of
+balance. But the horizontal broken lines near the base of the plot, which
+show the default rates for students and non-students averaged over all values of balance and income, suggest the opposite effect: the overall student
+default rate is higher than the non-student default rate. Consequently, there
+is a positive coefficient for student in the single variable logistic regression
+
+### Example with Fit1 only
+
+```{r}
+# visualisation of probability for edible/poisonous
+tibble(observed  = mushrooms_train$class, 
+       predicted = predict(fit1, type = "response")) %>% 
+  ggplot(aes(y = predicted, x = observed, colour = observed)) +
+  geom_point(position = position_jitter(width = 0.2), alpha = .3) +
+  scale_colour_manual(values = c("dark blue", "orange"), guide = "none") +
+  theme_minimal() +
+  labs(y = "Predicted probability to be poisonous")
+```
+
+```{r}
+# Train data table
+prob_lr <- predict(fit1, type = "response")
+pred_lr <- ifelse(prob_lr > .5, 1, 0)
+
+table(true = mushrooms_train$class, pred = pred_lr)
+```
+
+```{r}
+# for loop to test different threshold values
+thres <- data.frame(seq(0.05,0.95,length.out=19))
+TPR <- data.frame(matrix(nrow = length(thres), ncol = 1))
+TNR <- data.frame(matrix(nrow = length(thres), ncol = 1))
+ACC <- data.frame(matrix(nrow = length(thres), ncol = 1))
+FPR <- data.frame(matrix(nrow = length(thres), ncol = 1))
+PPV <- data.frame(matrix(nrow = length(thres), ncol = 1))
+NPV <- data.frame(matrix(nrow = length(thres), ncol = 1))
+
+for(i in 1:nrow(thres)){
+  pred_prob <- predict(fit1, type = "response")
+  pred_lr   <- factor(pred_prob > thres[i,1], labels = c("No", "Yes"))
+  cmat_lr <- table(true = mushrooms_train$class, predicted = pred_lr)
+  TN <- cmat_lr[1, 1]
+  FN <- cmat_lr[2, 1]
+  FP <- cmat_lr[1, 2]
+  TP <- cmat_lr[2, 2]
+  ACC[i,1] <- (TP + TN) / sum(cmat_lr)
+  TPR[i,1] <- TP / (TP + FN)
+  TNR[i,1] <- TN / (TN + FP)
+  FPR[i,1] <- FP / (TN + FP)
+  PPV[i,1] <- TP / (TP + FP)
+  NPV[i,1] <- TN / (TN + FN)
+}
+```
+
+```{r}
+# data manipulation to have all estimates in one dataframe
+alpha <- seq(0.05,0.95,length.out=19)
+
+TPR$alpha <- alpha
+TNR$alpha <- alpha
+ACC$alpha <- alpha
+FPR$alpha <- alpha
+PPV$alpha <- alpha
+NPV$alpha <- alpha
+
+TPR$TPR <- rep("TPR", nrow(TPR))
+TNR$TNR <- rep("TNR", nrow(TNR))
+ACC$ACC <- rep("ACC", nrow(ACC))
+FPR$FPR <- rep("FPR", nrow(FPR))
+PPV$PPV <- rep("PPV", nrow(PPV))
+NPV$NPV <- rep("NPV", nrow(NPV))
+
+colnames(TPR) <- c("Prob", "alpha","Facet")
+colnames(TNR) <- c("Prob", "alpha","Facet")
+colnames(ACC) <- c("Prob", "alpha","Facet")
+colnames(FPR) <- c("Prob", "alpha","Facet")
+colnames(PPV) <- c("Prob", "alpha","Facet")
+colnames(NPV) <- c("Prob", "alpha","Facet")
+
+comb <- rbind(TPR,TNR,ACC,FPR,PPV,NPV)
+con_res <- cbind(alpha, ACC[1],TPR[1],TNR[1],FPR[1],PPV[1],NPV[1])
+colnames(con_res) <- c("alpha", "ACC","TPR","TNR", "FPR","PPV","NPV")
+
+mean_prop <- comb %>% filter(Facet == "TPR" | Facet == "TNR") %>% group_by(alpha) %>%
+  summarise(mean(Prob)) 
+mean_prop # .3 is the best probability
+```
+
+```{r}
+# plotting the different estimates
+comb %>% 
+  filter(!Facet == "FPR") %>%
+    ggplot(aes(x= alpha, y= Prob ,fill = Facet, color=Facet)) + 
+    geom_line() +
+    theme_minimal() +
+    theme(plot.title = element_text(size = rel(2), face = "bold")) +
+    labs(title = "Figure 1. Threshold to choose", 
+       x = "Threshold", 
+       y = "Proportion of correct") 
+
+# conf_matrix with the newly chosen threshold
+pred_prob <- predict(fit1, type = "response")
+pred_lr   <- factor(pred_prob > .3, labels = c("No", "Yes"))
+
+table(true = mushrooms_train$class, predicted = pred_lr)
+```
+
+### Validation data example
+```{r}
+# Validation data table
+pred_prob <- predict(fit1, newdata = mushrooms_valid, type = "response")
+pred_lr   <- factor(pred_prob > .5, labels = c("No", "Yes"))
+
+table(true = mushrooms_valid$class, predicted = pred_lr)
+```
+
+```{r}
+TPR <- data.frame(matrix(nrow = length(thres), ncol = 1))
+TNR <- data.frame(matrix(nrow = length(thres), ncol = 1))
+ACC <- data.frame(matrix(nrow = length(thres), ncol = 1))
+FPR <- data.frame(matrix(nrow = length(thres), ncol = 1))
+PPV <- data.frame(matrix(nrow = length(thres), ncol = 1))
+NPV <- data.frame(matrix(nrow = length(thres), ncol = 1))
+
+for(i in 1:nrow(thres)){
+  pred_prob <- predict(fit1, newdata = mushrooms_valid, type = "response")
+  pred_lr   <- factor(pred_prob > thres[i,1], labels = c("No", "Yes"))
+  cmat_lr <- table(true = mushrooms_valid$class, predicted = pred_lr)
+  TN <- cmat_lr[1, 1]
+  FN <- cmat_lr[2, 1]
+  FP <- cmat_lr[1, 2]
+  TP <- cmat_lr[2, 2]
+  ACC[i,1] <- (TP + TN) / sum(cmat_lr)
+  TPR[i,1] <- TP / (TP + FN)
+  TNR[i,1] <- TN / (TN + FP)
+  FPR[i,1] <- FP / (TN + FP)
+  PPV[i,1] <- TP / (TP + FP)
+  NPV[i,1] <- TN / (TN + FN)
+}
+```
+
+```{r}
+alpha <- seq(0.05,0.95,length.out=19)
+
+TPR$alpha <- alpha
+TNR$alpha <- alpha
+ACC$alpha <- alpha
+FPR$alpha <- alpha
+PPV$alpha <- alpha
+NPV$alpha <- alpha
+
+TPR$TPR <- rep("TPR", nrow(TPR))
+TNR$TNR <- rep("TNR", nrow(TNR))
+ACC$ACC <- rep("ACC", nrow(ACC))
+FPR$FPR <- rep("FPR", nrow(FPR))
+PPV$PPV <- rep("PPV", nrow(PPV))
+NPV$NPV <- rep("NPV", nrow(NPV))
+
+colnames(TPR) <- c("Prob", "alpha","Facet")
+colnames(TNR) <- c("Prob", "alpha","Facet")
+colnames(ACC) <- c("Prob", "alpha","Facet")
+colnames(FPR) <- c("Prob", "alpha","Facet")
+colnames(PPV) <- c("Prob", "alpha","Facet")
+colnames(NPV) <- c("Prob", "alpha","Facet")
+
+comb_val <- rbind(TPR,TNR,ACC,FPR,PPV,NPV)
+con_res_val <- cbind(alpha, ACC[1],TPR[1],TNR[1],FPR[1],PPV[1],NPV[1])
+colnames(con_res_val) <- c("alpha", "ACC","TPR","TNR", "FPR","PPV","NPV")
+
+
+mean_prop <- comb %>% filter(Facet == "TPR" | Facet == "TNR") %>% group_by(alpha) %>%
+  summarise(mean(Prob)) 
+mean_prop # .3 is the best probability
+```
+
+```{r}
+comb %>% 
+  filter(!Facet == "FPR") %>%
+    ggplot(aes(x= alpha, y= Prob ,fill = Facet, color=Facet)) + 
+    geom_line() +
+    theme_minimal() +
+    theme(plot.title = element_text(size = rel(2), face = "bold")) +
+    labs(title = "Figure 1. Threshold to choose", 
+       x = "Threshold", 
+       y = "Proportion of correct") 
+
+pred_prob <- predict(fit1, newdata = mushrooms_valid, type = "response")
+pred_lr   <- factor(pred_prob > .3, labels = c("No", "Yes"))
+
+table(true = mushrooms_valid$class, predicted = pred_lr)
+```
+### LDA
+```{r}
+lda_mod <- lda(class ~ cap_shape+cap_surface+habitat+ring_type+gill_spacing+gill_size+stalk_shape+stalk_surface_above_ring+stalk_surface_below_ring, data = mushrooms_train)
+
+lda_mod
+```
+
+```{r}
+# train data
+pred_lda <- predict(lda_mod)
+cmat_lda <- table(true = mushrooms_train$class, pred = pred_lda$class)
+PPV <- cmat_lda[2, 2] / sum(cmat_lda[, 2])
+NPV <- cmat_lda[1, 1] / sum(cmat_lda[, 1])
+lda_t <- cbind(PPV,NPV)
+
+pred_lda_val <- predict(lda_mod, newdata = mushrooms_valid)
+cmat_lda_new <- table(true = mushrooms_valid$class, predicted = pred_lda_val$class)
+PPV_v <- cmat_lda_new[2, 2] / sum(cmat_lda_new[, 2])
+NPV_v <- cmat_lda_new[1, 1] / sum(cmat_lda_new[, 1])
+
+lda_v <- cbind(PPV_v,NPV_v)
+lda <- cbind(lda_t,lda_v)
+```
+
+```{r}
+con_res_lr <- con_res %>% filter(alpha == 0.3 | alpha == 0.6) %>% dplyr::select(alpha, PPV, NPV)
+con_res_val_lr <- con_res_val %>% filter(alpha == 0.3 | alpha == 0.6) %>% dplyr::select(PPV, NPV)
+colnames(con_res_val_lr) <- c("PPV_v","NPV_v")
+lr <- cbind(con_res_lr,con_res_val_lr)
+lda
+lr
+```
+
+### Brier Score
+```{r}
+pred_prob <- predict(fit1, newdata = mushrooms_valid, type = "response")
+mean((pred_prob - (as.numeric(mushrooms_valid$class) - 1)) ^ 2)
+# the mean squared difference between the probability and the true class is 0.0277
+```
+### ROC curve
+
+```{r}
+prob_lr1 <- predict(fit1, type = "response")
+prob_lr2 <- predict(fit2, type = "response")
+```
+```{r}
+roc_lr1 <- roc(mushrooms_train$class, prob_lr1)
+roc_lr2 <- roc(mushrooms_train$class, prob_lr2)
+ggroc(roc_lr1) + theme_minimal() + labs(title = "LR1")
+ggroc(roc_lr2) + theme_minimal() + labs(title = "LR2")
+roc_lr1
+roc_lr2
+```
