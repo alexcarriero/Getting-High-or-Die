@@ -5,6 +5,29 @@ date: '2022-10-21'
 output: html_document
 ---
 
+<<<<<<< Updated upstream
+=======
+```{r}
+library(readr)
+library(tidyverse)
+library(psych)
+library(MASS)
+library(pROC)
+library(randomForest)
+#library(xgboost)
+library(rpart)
+library(rpart.plot)
+library(jtools)
+library(class)
+library(ISLR)
+```
+--- title page ---
+--- add the tabs ---
+
+--- library not require ---
+
+
+>>>>>>> Stashed changes
 # Data
 ```{r}
 mushrooms <- read.csv("mushrooms.csv")
@@ -60,3 +83,431 @@ print("Hello world")
 # use plots
 ```
 
+<<<<<<< Updated upstream
+=======
+
+
+
+# Florian
+```{r}
+# Load data
+mushrooms <- read_csv("~/Documents/GitHub/Getting-High-or-Die/mushrooms.csv")
+
+# check the data
+View(mushrooms)
+str(mushrooms)
+
+# Tidy the data
+mushrooms_tidy <- mushrooms %>%
+  mutate(across(where(is.character),as_factor)) %>% 
+  select(-`veil-type`)# there is only one cat 
+
+# change the - to _ else the random forest will trip
+names(mushrooms_tidy) <- gsub(x = names(mushrooms_tidy), pattern = "-", replacement = "_") 
+
+# look at the data
+describe(mushrooms_tidy)
+
+# SPLIT THE DATA
+
+#make this example reproducible
+set.seed(0)
+
+mushrooms_tidy_split <- 
+  mushrooms_tidy %>% 
+  mutate(split = sample(rep(c("train", "test"), times = c(6500, 1624))))
+
+mushrooms_train <- 
+  mushrooms_tidy_split %>% 
+  filter(split == "train") %>%
+  dplyr::select(-split)
+
+mushrooms_test <- 
+  mushrooms_tidy_split %>% 
+  filter(split == "test") %>% 
+  dplyr::select(-split)
+
+# Simple model 2 logistig regression
+M1a <- glm(class ~ ., data = mushrooms_train, family = "binomial")
+summary(M1a)
+
+pred_prob <- predict(M1a, newdata = mushrooms_test,type = "response")
+pred_lr   <- factor(pred_prob > .5)
+table(true = mushrooms_test$class, predicted = pred_lr)
+
+roc_lr1 <- roc(mushrooms_test$class, pred_prob)
+ggroc(roc_lr1) + theme_minimal() + labs(title = "LR1")
+
+# Simple model 2 LDA
+M2a <- lda(class ~ ., data = mushrooms_train)
+pred_lda <- predict(M2a, newdata = mushrooms_test)
+table(true = mushrooms_test$class, predicted = pred_lda$class)
+
+# Improved model 1 Tree
+M3a <- rpart(class ~ ., data = mushrooms_tidy)
+rpart.plot(M3a)
+
+# Improved model 2 Free tree
+M3b <- rpart(class ~ ., data = mushrooms_tidy, control = rpart.control(minbucket = 1, cp = 0)) 
+rpart.plot(M3b)
+
+# Improved model 3 Random forest
+M3c <- randomForest(class ~ ., data = mushrooms_tidy)
+M3c
+
+# Improved model 4 XGboost
+
+# select the predictors and outcomes
+mushrooms_train_x <- mushrooms_train %>% 
+  dplyr::select(-class)
+mushrooms_train_y <- mushrooms_train %>% 
+  dplyr::select(class)
+  
+mushrooms_test_x <- mushrooms_test %>% 
+  dplyr::select(-class)
+mushrooms_test_y <- mushrooms_test %>% 
+  dplyr::select(class)
+
+#define final training and testing sets
+xgb_train = xgb.DMatrix(data = data.matrix(mushrooms_train_x), label = data.matrix(mushrooms_train_y))
+xgb_test = xgb.DMatrix(data =  data.matrix(mushrooms_test_x), label =  data.matrix(mushrooms_test_y))
+
+#define watchlist
+watchlist = list(train=xgb_train, test=xgb_test)
+
+#fit XGBoost model and display training and testing data at each round
+model = xgb.train(data = xgb_train, max.depth = 3, watchlist=watchlist, nrounds = 100)
+
+# the RSME starts to increase after 96
+# define final model
+final = xgboost(data = xgb_train, max.depth = 3, nrounds = 96, verbose = 0)
+
+```
+
+# Christoph
+
+```{r}
+mushrooms <- read_csv("mushrooms.csv")
+mushrooms
+```
+
+```{r}
+# data manipulation
+names(mushrooms) <- gsub(x = names(mushrooms), pattern = "\\-", replacement = "_")  
+mushrooms <- na.exclude(mushrooms)
+mushrooms <- mushrooms %>% mutate_if(is.character,as.factor)
+
+split <- c(rep("train", round(nrow(mushrooms)*0.7,0)), rep("valid", round(nrow(mushrooms)*0.3,0)))
+mushrooms <- mushrooms %>% mutate(split = sample(split))
+
+mushrooms_train <- mushrooms %>% filter(split == "train") %>% dplyr::select(-split,-veil_type)
+mushrooms_valid <- mushrooms %>% filter(split == "valid") %>% dplyr::select(-split,-veil_type)
+```
+
+```{r}
+# all predictors. But apparently model doesn't converge
+fit0 <- glm(class ~ ., family = binomial, data=mushrooms_train)
+
+# Train data table
+prob_lr <- predict(fit0, type = "response")
+pred_lr <- ifelse(prob_lr > .5, 1, 0)
+
+table(true = mushrooms_train$class, pred = pred_lr)
+
+# Validation data table
+pred_prob <- predict(fit0, newdata = mushrooms_valid, type = "response")
+pred_lr   <- factor(pred_prob > .5, labels = c("No", "Yes"))
+
+table(true = mushrooms_valid$class, predicted = pred_lr)
+```
+
+```{r}
+# model with many predictors, mainly used in my analysis
+fit1 <- glm(class ~ cap_shape+cap_surface+habitat+ring_type+gill_spacing+gill_size+stalk_shape+stalk_surface_above_ring+stalk_surface_below_ring, family = binomial, data=mushrooms_train)
+#summary(fit1)
+#summ(fit1, exp=T)
+
+# Train data table
+prob_lr <- predict(fit1, type = "response")
+pred_lr <- ifelse(prob_lr > .5, 1, 0)
+
+table(true = mushrooms_train$class, pred = pred_lr)
+
+# Validation data table
+pred_prob <- predict(fit1, newdata = mushrooms_valid, type = "response")
+pred_lr   <- factor(pred_prob > .5, labels = c("No", "Yes"))
+
+table(true = mushrooms_valid$class, predicted = pred_lr)
+```
+
+### Example with Fit1 only
+
+```{r}
+# visualisation of probability for edible/poisonous
+tibble(observed  = mushrooms_train$class, 
+       predicted = predict(fit1, type = "response")) %>% 
+  ggplot(aes(y = predicted, x = observed, colour = observed)) +
+  geom_point(position = position_jitter(width = 0.2), alpha = .3) +
+  scale_colour_manual(values = c("dark blue", "orange"), guide = "none") +
+  theme_minimal() +
+  labs(y = "Predicted probability to be poisonous")
+```
+
+```{r}
+# for loop to test different threshold values
+thres <- data.frame(seq(0.05,0.95,length.out=19))
+TPR <- data.frame(matrix(nrow = length(thres), ncol = 1))
+TNR <- data.frame(matrix(nrow = length(thres), ncol = 1))
+ACC <- data.frame(matrix(nrow = length(thres), ncol = 1))
+FPR <- data.frame(matrix(nrow = length(thres), ncol = 1))
+PPV <- data.frame(matrix(nrow = length(thres), ncol = 1))
+NPV <- data.frame(matrix(nrow = length(thres), ncol = 1))
+
+for(i in 1:nrow(thres)){
+  pred_prob <- predict(fit1, type = "response")
+  pred_lr   <- factor(pred_prob > thres[i,1], labels = c("No", "Yes"))
+  cmat_lr <- table(true = mushrooms_train$class, predicted = pred_lr)
+  TN <- cmat_lr[1, 1]
+  FN <- cmat_lr[2, 1]
+  FP <- cmat_lr[1, 2]
+  TP <- cmat_lr[2, 2]
+  ACC[i,1] <- (TP + TN) / sum(cmat_lr)
+  TPR[i,1] <- TP / (TP + FN)
+  TNR[i,1] <- TN / (TN + FP)
+  FPR[i,1] <- FP / (TN + FP)
+  PPV[i,1] <- TP / (TP + FP)
+  NPV[i,1] <- TN / (TN + FN)
+}
+```
+
+```{r}
+# data manipulation to have all estimates in one dataframe
+alpha <- seq(0.05,0.95,length.out=19)
+
+TPR$alpha <- alpha
+TNR$alpha <- alpha
+ACC$alpha <- alpha
+FPR$alpha <- alpha
+PPV$alpha <- alpha
+NPV$alpha <- alpha
+
+TPR$TPR <- rep("TPR", nrow(TPR))
+TNR$TNR <- rep("TNR", nrow(TNR))
+ACC$ACC <- rep("ACC", nrow(ACC))
+FPR$FPR <- rep("FPR", nrow(FPR))
+PPV$PPV <- rep("PPV", nrow(PPV))
+NPV$NPV <- rep("NPV", nrow(NPV))
+
+colnames(TPR) <- c("Prob", "alpha","Facet")
+colnames(TNR) <- c("Prob", "alpha","Facet")
+colnames(ACC) <- c("Prob", "alpha","Facet")
+colnames(FPR) <- c("Prob", "alpha","Facet")
+colnames(PPV) <- c("Prob", "alpha","Facet")
+colnames(NPV) <- c("Prob", "alpha","Facet")
+
+comb <- rbind(TPR,TNR,ACC,FPR,PPV,NPV)
+con_res <- cbind(alpha, ACC[1],TPR[1],TNR[1],FPR[1],PPV[1],NPV[1])
+colnames(con_res) <- c("alpha", "ACC","TPR","TNR", "FPR","PPV","NPV")
+
+mean_prop <- comb %>% filter(Facet == "TPR" | Facet == "TNR") %>% group_by(alpha) %>%
+  summarise(mean(Prob)) 
+mean_prop # .3 is the best probability
+```
+
+```{r}
+# plotting the different estimates
+comb %>% 
+  filter(!Facet == "FPR") %>%
+    ggplot(aes(x= alpha, y= Prob ,fill = Facet, color=Facet)) + 
+    geom_line() +
+    theme_minimal() +
+    theme(plot.title = element_text(size = rel(2), face = "bold")) +
+    labs(title = "Figure 1. Threshold to choose", 
+       x = "Threshold", 
+       y = "Proportion of correct") 
+
+# conf_matrix with the newly chosen threshold
+pred_prob <- predict(fit1, type = "response")
+pred_lr   <- factor(pred_prob > .3, labels = c("No", "Yes"))
+
+table(true = mushrooms_train$class, predicted = pred_lr)
+```
+
+### Validation data example
+```{r}
+# Validation data table
+pred_prob <- predict(fit1, newdata = mushrooms_valid, type = "response")
+pred_lr   <- factor(pred_prob > .5, labels = c("No", "Yes"))
+
+table(true = mushrooms_valid$class, predicted = pred_lr)
+```
+
+```{r}
+TPR <- data.frame(matrix(nrow = length(thres), ncol = 1))
+TNR <- data.frame(matrix(nrow = length(thres), ncol = 1))
+ACC <- data.frame(matrix(nrow = length(thres), ncol = 1))
+FPR <- data.frame(matrix(nrow = length(thres), ncol = 1))
+PPV <- data.frame(matrix(nrow = length(thres), ncol = 1))
+NPV <- data.frame(matrix(nrow = length(thres), ncol = 1))
+
+for(i in 1:nrow(thres)){
+  pred_prob <- predict(fit1, newdata = mushrooms_valid, type = "response")
+  pred_lr   <- factor(pred_prob > thres[i,1], labels = c("No", "Yes"))
+  cmat_lr <- table(true = mushrooms_valid$class, predicted = pred_lr)
+  TN <- cmat_lr[1, 1]
+  FN <- cmat_lr[2, 1]
+  FP <- cmat_lr[1, 2]
+  TP <- cmat_lr[2, 2]
+  ACC[i,1] <- (TP + TN) / sum(cmat_lr)
+  TPR[i,1] <- TP / (TP + FN)
+  TNR[i,1] <- TN / (TN + FP)
+  FPR[i,1] <- FP / (TN + FP)
+  PPV[i,1] <- TP / (TP + FP)
+  NPV[i,1] <- TN / (TN + FN)
+}
+```
+
+```{r}
+alpha <- seq(0.05,0.95,length.out=19)
+
+TPR$alpha <- alpha
+TNR$alpha <- alpha
+ACC$alpha <- alpha
+FPR$alpha <- alpha
+PPV$alpha <- alpha
+NPV$alpha <- alpha
+
+TPR$TPR <- rep("TPR", nrow(TPR))
+TNR$TNR <- rep("TNR", nrow(TNR))
+ACC$ACC <- rep("ACC", nrow(ACC))
+FPR$FPR <- rep("FPR", nrow(FPR))
+PPV$PPV <- rep("PPV", nrow(PPV))
+NPV$NPV <- rep("NPV", nrow(NPV))
+
+colnames(TPR) <- c("Prob", "alpha","Facet")
+colnames(TNR) <- c("Prob", "alpha","Facet")
+colnames(ACC) <- c("Prob", "alpha","Facet")
+colnames(FPR) <- c("Prob", "alpha","Facet")
+colnames(PPV) <- c("Prob", "alpha","Facet")
+colnames(NPV) <- c("Prob", "alpha","Facet")
+
+comb_val <- rbind(TPR,TNR,ACC,FPR,PPV,NPV)
+con_res_val <- cbind(alpha, ACC[1],TPR[1],TNR[1],FPR[1],PPV[1],NPV[1])
+colnames(con_res_val) <- c("alpha", "ACC","TPR","TNR", "FPR","PPV","NPV")
+
+
+mean_prop <- comb %>% filter(Facet == "TPR" | Facet == "TNR") %>% group_by(alpha) %>%
+  summarise(mean(Prob)) 
+mean_prop # .3 is the best probability
+```
+
+```{r}
+comb %>% 
+  filter(!Facet == "FPR") %>%
+    ggplot(aes(x= alpha, y= Prob ,fill = Facet, color=Facet)) + 
+    geom_line() +
+    theme_minimal() +
+    theme(plot.title = element_text(size = rel(2), face = "bold")) +
+    labs(title = "Figure 1. Threshold to choose", 
+       x = "Threshold", 
+       y = "Proportion of correct") 
+
+pred_prob <- predict(fit1, newdata = mushrooms_valid, type = "response")
+pred_lr   <- factor(pred_prob > .3, labels = c("No", "Yes"))
+
+table(true = mushrooms_valid$class, predicted = pred_lr)
+```
+### LDA
+```{r}
+lda_mod <- lda(class ~ cap_shape+cap_surface+habitat+ring_type+gill_spacing+gill_size+stalk_shape+stalk_surface_above_ring+stalk_surface_below_ring, data = mushrooms_train)
+
+lda_mod
+```
+
+```{r}
+# train data
+pred_lda <- predict(lda_mod)
+cmat_lda <- table(true = mushrooms_train$class, pred = pred_lda$class)
+PPV <- cmat_lda[2, 2] / sum(cmat_lda[, 2])
+NPV <- cmat_lda[1, 1] / sum(cmat_lda[, 1])
+lda_t <- cbind(PPV,NPV)
+
+pred_lda_val <- predict(lda_mod, newdata = mushrooms_valid)
+cmat_lda_new <- table(true = mushrooms_valid$class, predicted = pred_lda_val$class)
+PPV_v <- cmat_lda_new[2, 2] / sum(cmat_lda_new[, 2])
+NPV_v <- cmat_lda_new[1, 1] / sum(cmat_lda_new[, 1])
+
+lda_v <- cbind(PPV_v,NPV_v)
+lda <- cbind(lda_t,lda_v)
+```
+
+```{r}
+con_res_lr <- con_res %>% filter(alpha == 0.3 | alpha == 0.6) %>% dplyr::select(alpha, PPV, NPV)
+con_res_val_lr <- con_res_val %>% filter(alpha == 0.3 | alpha == 0.6) %>% dplyr::select(PPV, NPV)
+colnames(con_res_val_lr) <- c("PPV_v","NPV_v")
+lr <- cbind(con_res_lr,con_res_val_lr)
+lda
+lr
+```
+
+### Brier Score
+```{r}
+pred_prob <- predict(fit1, newdata = mushrooms_valid, type = "response")
+mean((pred_prob - (as.numeric(mushrooms_valid$class) - 1)) ^ 2)
+# the mean squared difference between the probability and the true class is 0.0277
+```
+### ROC curve
+
+```{r}
+prob_lr1 <- predict(fit1, type = "response")
+prob_lr2 <- predict(fit2, type = "response")
+```
+```{r}
+roc_lr1 <- roc(mushrooms_train$class, prob_lr1)
+roc_lr2 <- roc(mushrooms_train$class, prob_lr2)
+ggroc(roc_lr1) + theme_minimal() + labs(title = "LR1")
+ggroc(roc_lr2) + theme_minimal() + labs(title = "LR2")
+roc_lr1
+roc_lr2
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+>>>>>>> Stashed changes
