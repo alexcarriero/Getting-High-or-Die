@@ -5,7 +5,7 @@ date: '2022-10-21'
 output: html_document
 ---
 
-```{r}
+```{r, warning = F, message = F}
 library(readr)
 library(tidyverse)
 library(psych)
@@ -29,7 +29,6 @@ library(ISLR)
 ```{r}
 mushrooms <- read.csv("mushrooms.csv")
 ```
-
 
 ## Attribute Information: (classes: edible=e, poisonous=p)
 
@@ -57,6 +56,7 @@ $population$: abundant=a,clustered=c,numerous=n,scattered=s,several=v,solitary=y
 $habitat$: grasses=g,leaves=l,meadows=m,paths=p,urban=u,waste=w,woods=d
 
 ```{r}
+mushrooms <- read_csv("mushrooms.csv")
 mushrooms
 ```
 
@@ -117,8 +117,6 @@ print("Hello world")
 ```
 
 
-
-
 # Florian
 ```{r}
 # Load data
@@ -131,7 +129,7 @@ str(mushrooms)
 # Tidy the data
 mushrooms_tidy <- mushrooms %>%
   mutate(across(where(is.character),as_factor)) %>% 
-  select(-`veil-type`)# there is only one cat 
+  select(-`veil-type`) # there is only one cat 
 
 # change the - to _ else the random forest will trip
 names(mushrooms_tidy) <- gsub(x = names(mushrooms_tidy), pattern = "-", replacement = "_") 
@@ -218,7 +216,12 @@ final = xgboost(data = xgb_train, max.depth = 3, nrounds = 96, verbose = 0)
 # Christoph
 
 ```{r}
+<<<<<<< HEAD
+mushrooms <- read_csv("mushrooms.csv")
+mushrooms
+=======
 mushrooms <- read.csv("mushrooms.csv")
+>>>>>>> bab9fe1f78ab03fa892238ab13a50ea0e4ca63c5
 ```
 
 ```{r}
@@ -492,6 +495,7 @@ mean((pred_prob - (as.numeric(mushrooms_valid$class) - 1)) ^ 2)
 prob_lr1 <- predict(fit1, type = "response")
 prob_lr2 <- predict(fit2, type = "response")
 ```
+
 ```{r}
 roc_lr1 <- roc(mushrooms_train$class, prob_lr1)
 roc_lr2 <- roc(mushrooms_train$class, prob_lr2)
@@ -501,42 +505,190 @@ roc_lr1
 roc_lr2
 ```
 
+# Al
 
 
+```{r}
+data<- read.csv("mushrooms.csv")
+```
 
+```{r}
+# tidy data -- merge redundant categories 
+mushrooms <- data %>% 
+    mutate(across(where(is.character), as_factor))%>%
+    dplyr::select(-veil.type, -stalk.root)%>%     
+    mutate(cap.shape = cap.shape %>% 
+             fct_recode("bell"    = "b",
+                        "conical" = "c",
+                        "convex"  = "x",
+                        "flat"    = "f", 
+                        "knobbed" = "k",
+                        "sunken"  = "s"),
+           cap.surface = cap.surface %>% 
+             fct_recode("fibrous" = "f",
+                        "grooves" = "g",
+                        "scaly"   = "y",
+                        "smooth"  = "s"), 
+           bruises = bruises %>% 
+             fct_recode("true"       = "t",
+                        "false"      = "f"), 
+           odor = odor %>%
+             fct_recode("almond"     = "a",
+                        "anise"      = "l",
+                        "creosote"   = "c",
+                        "fishy"      = "y",
+                        "foul"       = "f",
+                        "musty"      = "m",
+                        "none"       = "n",
+                        "pungent"    = "p",
+                        "spicy"      = "s"),
+           cap.color = cap.color %>%                 
+             fct_recode("brown"      = "n",
+                        "brown"      = "b",
+                        "brown"      = "c", 
+                        "pink"       = "u",                      
+                        "pink"       = "e", 
+                        "pink"       = "p", 
+                        "gray"       = "g",
+                        "green"      = "r", 
+                        "white"      = "w",
+                        "yellow"     = "y"),
+           gill.attachment = gill.attachment %>% 
+             fct_recode("attached"   = "a",
+                        "free"       = "f"), 
+           gill.spacing = gill.spacing %>% 
+             fct_recode("close"      = "c",
+                        "crowded"    = "w"),
+           gill.size = gill.size %>% 
+             fct_recode("broad"      = "b",
+                        "narrow"     = "n"), 
+           gill.color = gill.color %>% 
+             fct_recode("black"      ="k",
+                        "brown"      ="n",
+                        "brown"      ="b",
+                        "brown"      ="h",
+                        "gray"       ="g", 
+                        "green"      ="r",
+                        "orange"     ="o",
+                        "pink"       ="p",
+                        "pink"       ="u",
+                        "pink"       ="e",
+                        "white"      ="w",
+                        "yellow"     ="y"),
+           stalk.shape = stalk.shape %>% 
+             fct_recode("enlarging"  ="e",
+                        "tapering"   ="t"), 
+           stalk.surface.above.ring = stalk.surface.above.ring %>% 
+             fct_recode("fibrous"    ="f",
+                        "scaly"      ="y",
+                        "silky"      ="k",
+                        "smooth"     ="s"), 
+          stalk.surface.below.ring = stalk.surface.below.ring %>% 
+             fct_recode("fibrous"    ="f",
+                        "scaly"      ="y",
+                        "silky"      ="k",
+                        "smooth"     ="s"), 
+          stalk.color.above.ring = stalk.color.above.ring %>% 
+            fct_recode("brown"       ="n",
+                       "brown"       ="b",
+                       "brown"       ="c",
+                       "gray"        ="g",
+                       "orange"      ="o",
+                       "pink"        ="p",
+                       "pink"        ="e",
+                       "white"       ="w",
+                       "yellow"      ="y",), 
+          stalk.color.below.ring = stalk.color.below.ring %>% 
+            fct_recode("brown"       ="n",
+                       "brown"       ="b",
+                       "brown"       ="c",
+                       "gray"        ="g",
+                       "orange"      ="o",
+                       "pink"        ="p",
+                       "pink"        ="e",
+                       "white"       ="w",
+                       "yellow"      ="y",), 
+          veil.color = veil.color %>%
+            fct_recode("brown"       ="n",
+                       "orange"      ="o",
+                       "white"       ="w",
+                       "yellow"      ="y"),
+          ring.number = ring.number %>% 
+            fct_recode("none"        ="n",
+                       "one"         ="o",
+                       "two"         ="t"), 
+          ring.type = ring.type %>% 
+            fct_recode("evanescent"  ="e",
+                       "flaring"     ="f",
+                       "large"       ="l",
+                       "none"        ="n",
+                       "pendant"     ="p"),
+          spore.print.color = spore.print.color %>% 
+            fct_recode("black"   ="k",
+                       "brown"   ="n",
+                       "brown"   ="b",
+                       "brown"   ="h",
+                       "green"   ="r",
+                       "orange"  ="o",
+                       "purple"  ="u",
+                       "white"   ="w",
+                       "yellow"  ="y"), 
+         population = population %>% 
+           fct_recode("group"    ="a",
+                      "group"    ="c",
+                      "group"    ="n",
+                      "group"    ="s",
+                      "group"    ="v",
+                      "solitary" ="y"), 
+         habitat = habitat %>% 
+           fct_recode("grasses"  ="g",
+                      "woods"    ="l",
+                      "grasses"  ="m",
+                      "urban"    ="p",
+                      "urban"    ="u",
+                      "waste"    ="w",
+                      "woods"    ="d"))
+```
 
+```{r}
+# test and train
+n = dim(mushrooms)[1]
+mushrooms_split <- mushrooms %>% 
+                   mutate(split = sample(rep(c("train", "test"), times = c(round(.8*n), round(.2*n)))))
 
+mushrooms_train <- mushrooms_split %>% 
+                  filter(split == "train") %>%
+                  dplyr::select(-split)
 
+mushrooms_test  <- mushrooms_split %>% 
+                  filter(split == "test") %>%
+                  dplyr::select(-split)
+```
 
+```{r}
+# beginner 
+beginner       <- mushrooms %>% 
+                  dplyr::select(class, cap.shape, cap.color, bruises, gill.color, stalk.shape, ring.number, population, habitat)
 
+beginner_train <- mushrooms_train %>% 
+                  dplyr::select(class, cap.shape, cap.color, bruises, gill.color, stalk.shape, ring.number, population, habitat)
 
+beginner_test  <- mushrooms_test %>% 
+                  dplyr::select(class, cap.shape, cap.color, bruises, gill.color, stalk.shape, ring.number, population, habitat)
+                
 
+# advanced 
+advanced       <- mushrooms 
+advanced_train <- mushrooms_train
+advanced_test  <- mushrooms_test
+```
 
+```{r}
+lr_b <- glm(class~. , family = "binomial",  data = beginner) # all good
+```
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+```{r}
+lr_a <- glm(class~. , family = "binomial",  data = advanced) # no convergence
+```
 
 
