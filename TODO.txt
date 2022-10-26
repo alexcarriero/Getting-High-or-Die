@@ -1,0 +1,51 @@
+AIM
+- to create an app classifying mushrooms for hikers
+- we want to cater to different interests: an app, and printed out stuff.
+  We will find the best models for this and see what works "well enough" for hikers
+
+PRIORITIES
+- beginner models
+- advanced is if we have time afterwards - are they better, how much better?
+
+PREDICTORS (determined from meeting on 26/10)
+- full set: nonconverging for GLM
+- handle missing predictors
+- what's observable for hikers?
+	cap shape   	- beginner
+	cap surface 	- advanced
+	cap color   	- beginner - collapse brown & cinnamon & buff, pink & purple & red
+		    	- advanced - as originally
+	bruises     	- beginner
+	odor        	- advanced
+	gill 		- advanced
+	gill color      - beginner - collapse brown & buff & chocolate, pink & purple & red
+	stalk shape	- beginner
+	stalk root	- advanced
+	stalk surface	- advanced
+	stalk color	- advanced?
+	veil type	- excluded
+	veil color	- advanced
+	ring number	- beginner
+	ring type	- advanced
+	spore print	- advanced
+	population	- beginner - collapse into loner/with friends
+	habitat		- beginner - collapse meadows & grass, leaves & woods, paths & urban
+	
+
+MODELS
+- Florian & Christoph: logistic regression
+- Judith & Alex:       trees
+
+HOW WE EVALUATE MODELS
+- Christoph has some functions - has AUC for logreg
+- Alex wants to look into calibration
+
+TODO
+- Preprocess data: Alex
+	- recoding
+	- beginner dataset
+	- advanced dataset
+	- train dataset
+	- test dataset
+- Fit beginner models & see if we can have less predictors
+	Meeting about this 02/11 after class (Judith will bring unstable unicorns)
