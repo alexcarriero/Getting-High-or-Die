@@ -691,4 +691,166 @@ lr_b <- glm(class~. , family = "binomial",  data = beginner) # all good
 lr_a <- glm(class~. , family = "binomial",  data = advanced) # no convergence
 ```
 
+## Christoph & Florian
 
+```{r}
+generate_formulas <- function(p, x_vars, y_var) {
+  x_vars <- colnames(x_vars)
+  # Input checking
+  if (p %% 1 != 0)           stop("Input an integer n")
+  if (p > length(x_vars))    stop("p should be smaller than number of vars")
+  if (!is.character(x_vars)) stop("x_vars should be a character vector")
+  if (!is.character(y_var))  stop("y_vars should be character type")
+  
+  # combn generates all combinations, apply turns them into formula strings
+  apply(combn(x_vars, p), 2, function(vars) {
+    paste0(y_var, " ~ ", paste(vars, collapse = " + "))
+  })
+}
+```
+
+```{r}
+mushrooms_begin_x <- beginner %>%
+  dplyr::select(-class)
+```
+
+```{r}
+formulas_2 <- generate_formulas(p=2,x_vars=mushrooms_begin_x, y_var="class")
+formulas_3 <- generate_formulas(p=3,x_vars=mushrooms_begin_x, y_var="class")
+formulas_4 <- generate_formulas(p=4,x_vars=mushrooms_begin_x, y_var="class")
+formulas_5 <- generate_formulas(p=5,x_vars=mushrooms_begin_x, y_var="class")
+formulas_6 <- generate_formulas(p=6,x_vars=mushrooms_begin_x, y_var="class")
+```
+
+```{r}
+best_model <- function(formulas,train,valid, valid_y){
+  out <-data.frame(matrix(nrow = length(formulas), ncol = 2))
+  
+  for(i in 1:length(formulas)){
+    model <- glm(formulas[i], family=binomial, data=train)
+    pred_prob <- predict(model, type = "response", newdata = valid)
+    roc_lr1 <- roc(valid_y, pred_prob)
+    out[i,1] <- roc_lr1$auc[1]
+    out[i,2] <- formulas[i]
+    }
+  colnames(out) <- c("auc", "formula")
+  out <- out[order(out$auc,decreasing = T),]
+  
+return(best=out[1:3, ])
+}
+```
+
+```{r, echo=FALSE}
+pred2 <- best_model(formulas=formulas_2,train=beginner_train,valid=beginner_test,valid_y=beginner_test$class)
+pred3 <- best_model(formulas=formulas_3,train=beginner_train,valid=beginner_test,valid_y=beginner_test$class)
+pred4 <- best_model(formulas=formulas_4,train=beginner_train,valid=beginner_test,valid_y=beginner_test$class)
+pred5 <- best_model(formulas=formulas_5,train=beginner_train,valid=beginner_test,valid_y=beginner_test$class)
+pred6 <- best_model(formulas=formulas_6,train=beginner_train,valid=beginner_test,valid_y=beginner_test$class)
+```
+
+```{r}
+max(pred2$auc)
+max(pred3$auc)
+max(pred4$auc)
+max(pred5$auc)
+max(pred6$auc)
+# reasonable to take 3-4 predictors
+```
+```{r}
+pred3$formula
+pred4$formula
+```
+
+```{r}
+fit1 <- glm(class ~ bruises + gill.color + habitat, family=binomial, data=beginner_train)
+pred_prob <- predict(fit1, type = "response", newdata = beginner_test)
+roc <- roc(beginner_test$class, pred_prob)
+ggroc(roc) + theme_minimal() + labs(title = pred3$formula[1])
+```
+```{r}
+# Validation data table
+pred_lr   <- factor(pred_prob_1 > .5, labels = c("No", "Yes"))
+table(true = beginner_test$class, predicted = pred_lr)
+```
+
+```{r}
+thres <- data.frame(seq(0.05,0.95,length.out=19))
+TPR <- data.frame(matrix(nrow = length(thres), ncol = 1))
+TNR <- data.frame(matrix(nrow = length(thres), ncol = 1))
+ACC <- data.frame(matrix(nrow = length(thres), ncol = 1))
+FPR <- data.frame(matrix(nrow = length(thres), ncol = 1))
+PPV <- data.frame(matrix(nrow = length(thres), ncol = 1))
+NPV <- data.frame(matrix(nrow = length(thres), ncol = 1))
+
+for(i in 1:nrow(thres)){
+  pred_prob <- predict(fit1, newdata = beginner_test, type = "response")
+  pred_lr   <- factor(pred_prob > thres[i,1], labels = c("No", "Yes"))
+  cmat_lr <- table(true = beginner_test$class, predicted = pred_lr)
+  TN <- cmat_lr[1, 1]
+  FN <- cmat_lr[2, 1]
+  FP <- cmat_lr[1, 2]
+  TP <- cmat_lr[2, 2]
+  ACC[i,1] <- (TP + TN) / sum(cmat_lr)
+  TPR[i,1] <- TP / (TP + FN)
+  TNR[i,1] <- TN / (TN + FP)
+  FPR[i,1] <- FP / (TN + FP)
+  PPV[i,1] <- TP / (TP + FP)
+  NPV[i,1] <- TN / (TN + FN)
+}
+```
+
+```{r}
+alpha <- seq(0.05,0.95,length.out=19)
+
+TPR$alpha <- alpha
+TNR$alpha <- alpha
+ACC$alpha <- alpha
+FPR$alpha <- alpha
+PPV$alpha <- alpha
+NPV$alpha <- alpha
+
+TPR$TPR <- rep("TPR", nrow(TPR))
+TNR$TNR <- rep("TNR", nrow(TNR))
+ACC$ACC <- rep("ACC", nrow(ACC))
+FPR$FPR <- rep("FPR", nrow(FPR))
+PPV$PPV <- rep("PPV", nrow(PPV))
+NPV$NPV <- rep("NPV", nrow(NPV))
+
+colnames(TPR) <- c("Prob", "alpha","Facet")
+colnames(TNR) <- c("Prob", "alpha","Facet")
+colnames(ACC) <- c("Prob", "alpha","Facet")
+colnames(FPR) <- c("Prob", "alpha","Facet")
+colnames(PPV) <- c("Prob", "alpha","Facet")
+colnames(NPV) <- c("Prob", "alpha","Facet")
+
+comb_val <- rbind(TPR,TNR,ACC,FPR,PPV,NPV)
+con_res_val <- cbind(alpha, ACC[1],TPR[1],TNR[1],FPR[1],PPV[1],NPV[1])
+colnames(con_res_val) <- c("alpha", "ACC","TPR","TNR", "FPR","PPV","NPV")
+```
+
+```{r}
+comb_val %>% 
+  filter(!Facet == "FPR") %>%
+    ggplot(aes(x= alpha, y= Prob ,fill = Facet, color=Facet)) + 
+    geom_line() +
+    theme_minimal() +
+    theme(plot.title = element_text(size = rel(2), face = "bold")) +
+    labs(title = "Figure 1. Threshold to choose", 
+       x = "Threshold", 
+       y = "Proportion of correct") 
+```
+
+```{r}
+mean_prop <- comb_val %>% filter(Facet == "TPR" | Facet == "TNR" | Facet == "Acc") %>% group_by(alpha) %>%
+  summarise(mean(Prob)) 
+mean_prop <- mean_prop[order(mean_prop$`mean(Prob)`, decreasing=T),]
+mean_prop
+```
+
+
+```{r}
+pred_prob <- predict(fit1, newdata = beginner_test, type = "response")
+pred_lr   <- factor(pred_prob > .4, labels = c("No", "Yes"))
+
+table(true = beginner_test$class, predicted = pred_lr)
+```
