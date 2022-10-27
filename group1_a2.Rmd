@@ -216,12 +216,7 @@ final = xgboost(data = xgb_train, max.depth = 3, nrounds = 96, verbose = 0)
 # Christoph
 
 ```{r}
-<<<<<<< HEAD
 mushrooms <- read_csv("mushrooms.csv")
-mushrooms
-=======
-mushrooms <- read.csv("mushrooms.csv")
->>>>>>> bab9fe1f78ab03fa892238ab13a50ea0e4ca63c5
 ```
 
 ```{r}
