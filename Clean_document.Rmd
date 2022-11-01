@@ -5,6 +5,9 @@ date: "10/26/2022"
 output: html_document
 ---
 
+--- title page ---
+--- add the tabs ---
+
 ```{r, warning = F, message = F}
 library(readr)
 library(tidyverse)
@@ -18,14 +21,13 @@ library(rpart.plot)
 library(jtools)
 library(class)
 library(ISLR)
+library(Matrix)
 ```
-
---- title page ---
---- add the tabs ---
 
 ## Tidy the data
 
 ```{r}
+# import data
 data<- read.csv("mushrooms.csv")
 ```
 
@@ -167,11 +169,15 @@ mushrooms <- data %>%
                       "woods"    ="d"))
 ```
 
-```{r}
+```{r} 
+# set seed 
+set.seed(191)
+
 # test and train
 n = dim(mushrooms)[1]
 mushrooms_split <- mushrooms %>% 
-                   mutate(split = sample(rep(c("train", "test"), times = c(round(.8*n), round(.2*n)))))
+                   mutate(split = sample(rep(c("train", "test"), 
+                                             times = c(round(.8*n), round(.2*n)))))
 
 mushrooms_train <- mushrooms_split %>% 
                   filter(split == "train") %>%
@@ -185,13 +191,16 @@ mushrooms_test  <- mushrooms_split %>%
 ```{r}
 # beginner 
 beginner       <- mushrooms %>% 
-                  dplyr::select(class, cap.shape, cap.color, bruises, gill.color, stalk.shape, ring.number, population, habitat)
+                  dplyr::select(class, cap.shape, cap.color, bruises, gill.color, 
+                                stalk.shape, ring.number, population, habitat)
 
 beginner_train <- mushrooms_train %>% 
-                  dplyr::select(class, cap.shape, cap.color, bruises, gill.color, stalk.shape, ring.number, population, habitat)
+                  dplyr::select(class, cap.shape, cap.color, bruises, gill.color, 
+                                stalk.shape, ring.number, population, habitat)
 
 beginner_test  <- mushrooms_test %>% 
-                  dplyr::select(class, cap.shape, cap.color, bruises, gill.color, stalk.shape, ring.number, population, habitat)
+                  dplyr::select(class, cap.shape, cap.color, bruises, gill.color,
+                                stalk.shape, ring.number, population, habitat)
                 
 
 # advanced 
@@ -200,17 +209,15 @@ advanced_train <- mushrooms_train
 advanced_test  <- mushrooms_test
 ```
 
-```{r}
-
-```
-
 ## Logistic regression
 ```{r}
 
 ```
 
 ## Trees
+
 ```{r}
 
 ```
+
 
