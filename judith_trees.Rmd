@@ -1,0 +1,84 @@
+---
+title: "Judith's trees"
+author: "Judith Neve"
+date: '2022-11-01'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+RUN CLEAN_DOCUMENT BEFORE THIS ONE
+
+```{r}
+library(pROC)
+```
+
+# Some functions for performance metrics
+
+```{r}
+perf.metrics <- function(model, test, model.name = NA) {
+  pred_class <- predict(model, type = "class", newdata = test)
+
+  confusion.table <- table(
+    true      = test$class,
+    predicted = pred_class
+    )
+  
+  TN <- confusion.table[1,1]
+  TP <- confusion.table[2,2]
+  FP <- confusion.table[1,2]
+  FN <- confusion.table[2,1]
+  
+  accuracy <- (TN + TP) / sum(confusion.table)
+  sensitivity <- TP / (TP + FN)
+  specificity <- TN / (TN + FP)
+  FPR <- FP / (FP + TN)
+  PPV <- TP / (TP + FP)
+  NPV <- TN / (TN + FN)
+  
+  pred_prob <- predict(model, type = "prob", newdata = test)[,2]
+  AUC <- auc(test$class, pred_prob)
+  
+  data.frame(model.name, accuracy, sensitivity, specificity, FPR, PPV, NPV, AUC)
+}
+```
+
+
+# Beginner models
+
+## Tree
+
+Pro: visualisation
+Con: risk of overfitting
+
+### Fitting it
+
+```{r}
+beginner_tree <- rpart(
+  class ~ .,
+  data = beginner_train
+  )
+rpart.plot(beginner_tree)
+```
+
+### Evaluating it
+
+```{r}
+model.evaluations <- perf.metrics(beginner_tree, beginner_test, model.name = "Tree, beginner")
+model.evaluations
+```
+
+# Advanced models
+
+```{r}
+
+```
+
+# Comparing advanced to beginner: are they a lot better?
+
+```{r}
+
+```
+
