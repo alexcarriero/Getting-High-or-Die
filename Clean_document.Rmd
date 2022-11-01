@@ -209,6 +209,12 @@ advanced_train <- mushrooms_train
 advanced_test  <- mushrooms_test
 ```
 
+```{r}
+# clean up environment
+rm(data, mushrooms, mushrooms_split, mushrooms_test, mushrooms_train, advanced, beginner, n)
+```
+
+
 ## Logistic regression
 ```{r}
 
