@@ -201,17 +201,11 @@ beginner_train <- mushrooms_train %>%
 beginner_test  <- mushrooms_test %>% 
                   dplyr::select(class, cap.shape, cap.color, bruises, gill.color,
                                 stalk.shape, ring.number, population, habitat)
-                
-
-# advanced 
-advanced       <- mushrooms 
-advanced_train <- mushrooms_train
-advanced_test  <- mushrooms_test
 ```
 
 ## Logistic regression
 
-### Formulas
+### Generating all possible combination of predictors
 
 ```{r}
 generate_formulas <- function(p, x_vars, y_var) {
@@ -229,10 +223,13 @@ generate_formulas <- function(p, x_vars, y_var) {
 }
 ```
 
+## Function to find best predictors and best alpha based on chosen metric (Balance from sens and spec with more weight for sens)
+
 ```{r}
+# this formula should not be used for itself, but just in combination with the cross validation formula for finding the best predictors
 find_best_predictors <- function(formulas,train,valid, valid_y){
   
-  out <-data.frame(matrix(nrow = length(formulas), ncol = 2))
+  out <-data.frame(matrix(nrow = length(formulas), ncol = 3))
   thres <- data.frame(seq(0.05,0.95,length.out=19))
   alpha <- seq(0.05,0.95,length.out=19)
 
@@ -246,15 +243,15 @@ find_best_predictors <- function(formulas,train,valid, valid_y){
       
     for(j in 1:nrow(thres)){
       pred_lr <- c()
-      pred_lr <- case_when(pred_prob > as.numeric(thres[j,1]) ~ "Yes", pred_prob <= as.numeric(thres[j,1]) ~ "No")
+      pred_lr <- case_when(pred_prob > as.numeric(thres[j,1]) ~ 1, pred_prob <= as.numeric(thres[j,1]) ~ 0)
       cmat_lr <- table(true = valid_y, predicted = pred_lr)
-      if(sum(pred_lr == "Yes" ) == length(valid_y)){
+      if(sum(pred_lr == 1 ) == length(valid_y)){
         TN <- cmat_lr[1, 1]
         FN <- cmat_lr[2, 1]
         FP <- 0
         TP <- 0
       }
-      else if(sum(pred_lr == "No" ) == length(valid_y)){
+      else if(sum(pred_lr == 0 ) == length(valid_y)){
         TN <- 0
         FN <- 0
         FP <- cmat_lr[1, 1]
@@ -266,135 +263,30 @@ find_best_predictors <- function(formulas,train,valid, valid_y){
         TP <- cmat_lr[2, 2]
       }
       comb[j,1] <- TP / (TP + FN)
-      comb[j,2] <- TN / (TN + FP)
-      comb[j,3] <- (comb[j,1]*1.2+comb[j,2])/2
+      comb[j,2] <- 1- (FP / (TN + FP)) # Same as TNR just to emphasize
+      comb[j,3] <- (comb[j,1]+comb[j,2]*1.5)/2
       }
     comb <- comb[order(comb$mean, decreasing=T),]
     
     out[i,1] <- comb[1,3]
     out[i,2] <- formulas[i]
+    out[i,3] <- comb[1,4]
     
     }
-  colnames(out) <- c("meanTPR_TNR", "formula")
-  out <- out[order(out$meanTPR_TNR,decreasing = T),]
-  
-return(best=out[1:3, ])
-}
-```
-
-```{r}
-# alternative
-best_model <- function(formulas,train,valid, valid_y){
-  out <-data.frame(matrix(nrow = length(formulas), ncol = 2))
-  
-  for(i in 1:length(formulas)){
-    model <- glm(formulas[i], family=binomial, data=train)
-    pred_prob <- predict(model, type = "response", newdata = valid)
-    roc_lr1 <- roc(valid_y, pred_prob)
-    out[i,1] <- roc_lr1$auc[1]
-    out[i,2] <- formulas[i]
-    }
-  colnames(out) <- c("auc", "formula")
-  out <- out[order(out$auc,decreasing = T),]
-  
-return(best=out[1:3, ])
-}
-```
-
-```{r}
-mushrooms_begin_x <- beginner %>%
-  dplyr::select(-class)
-```
-
-```{r}
-set.seed(14)
-```
-
-```{r}
-formulas_2 <- generate_formulas(p=2,x_vars=mushrooms_begin_x, y_var="class")
-formulas_3 <- generate_formulas(p=3,x_vars=mushrooms_begin_x, y_var="class")
-formulas_4 <- generate_formulas(p=4,x_vars=mushrooms_begin_x, y_var="class")
-formulas_5 <- generate_formulas(p=5,x_vars=mushrooms_begin_x, y_var="class")
-formulas_6 <- generate_formulas(p=6,x_vars=mushrooms_begin_x, y_var="class")
-```
-
-```{r}
-pred2 <- find_best_predictors(formulas=formulas_2,train=beginner_train,valid=beginner_test,valid_y=beginner_test$class)
-pred3 <- find_best_predictors(formulas=formulas_3,train=beginner_train,valid=beginner_test,valid_y=beginner_test$class)
-pred4 <- find_best_predictors(formulas=formulas_4,train=beginner_train,valid=beginner_test,valid_y=beginner_test$class)
-pred5 <- find_best_predictors(formulas=formulas_5,train=beginner_train,valid=beginner_test,valid_y=beginner_test$class)
-pred6 <- find_best_predictors(formulas=formulas_6,train=beginner_train,valid=beginner_test,valid_y=beginner_test$class)
-
-```
-
-
-```{r, echo=FALSE}
-pred2_b <- best_model(formulas=formulas_2,train=beginner_train,valid=beginner_test,valid_y=beginner_test$class)
-pred3_b <- best_model(formulas=formulas_3,train=beginner_train,valid=beginner_test,valid_y=beginner_test$class)
-pred4_b <- best_model(formulas=formulas_4,train=beginner_train,valid=beginner_test,valid_y=beginner_test$class)
-pred5_b <- best_model(formulas=formulas_5,train=beginner_train,valid=beginner_test,valid_y=beginner_test$class)
-pred6_b <- best_model(formulas=formulas_6,train=beginner_train,valid=beginner_test,valid_y=beginner_test$class)
-```
-
-## cross validation
-
-```{r}
-find_best_predictors2 <- function(formulas,train,valid, valid_y){
-  
-  out <-data.frame(matrix(nrow = length(formulas), ncol = 2))
-  thres <- data.frame(seq(0.05,0.95,length.out=19))
-  alpha <- seq(0.05,0.95,length.out=19)
-
-  for(i in 1:length(formulas)){
-    model <- glm(formulas[i], family=binomial, data=train)
-    pred_prob <- predict(model, type = "response", newdata = valid)
-    
-    comb <- data.frame(matrix(nrow = nrow(thres), ncol = 3))
-    comb$alpha <- alpha
-    colnames(comb) <- c("TPR", "TNR","mean","alpha")
-      
-    for(j in 1:nrow(thres)){
-      pred_lr <- c()
-      pred_lr <- case_when(pred_prob > as.numeric(thres[j,1]) ~ "Yes", pred_prob <= as.numeric(thres[j,1]) ~ "No")
-      cmat_lr <- table(true = valid_y, predicted = pred_lr)
-      if(sum(pred_lr == "Yes" ) == length(valid_y)){
-        TN <- cmat_lr[1, 1]
-        FN <- cmat_lr[2, 1]
-        FP <- 0
-        TP <- 0
-      }
-      else if(sum(pred_lr == "No" ) == length(valid_y)){
-        TN <- 0
-        FN <- 0
-        FP <- cmat_lr[1, 1]
-        TP <- cmat_lr[2, 1]
-      }      else{
-        TN <- cmat_lr[1, 1]
-        FN <- cmat_lr[2, 1]
-        FP <- cmat_lr[1, 2]
-        TP <- cmat_lr[2, 2]
-      }
-      comb[j,1] <- TP / (TP + FN)
-      comb[j,2] <- TN / (TN + FP)
-      comb[j,3] <- (comb[j,1]*1.2+comb[j,2])/2
-      }
-    comb <- comb[order(comb$mean, decreasing=T),]
-    
-    out[i,1] <- comb[1,3]
-    out[i,2] <- formulas[i]
-    
-    }
-  colnames(out) <- c("meanTPR_TNR", "formula")
+  colnames(out) <- c("meanTPR_TNR", "formula","alpha")
   
 return(out)
 }
 ```
 
+
+### Cross-validating the choice of predictors
 ```{r}
-crossvalidate <- function(k, dataset, form, top){
+cv_best_pred <- function(k, dataset, form, top){
   
   Y <- data.frame(matrix(nrow = length(form), ncol = k))
-  Final <- data.frame(matrix(nrow = length(form), ncol = 2))
+  Z <- data.frame(matrix(nrow = length(form), ncol = k))
+  Final <- data.frame(matrix(nrow = length(form), ncol = 3))
   
   # first, add a selection column to the dataset as before
   n_samples  <- nrow(dataset)
@@ -408,21 +300,152 @@ crossvalidate <- function(k, dataset, form, top){
     
     data_valid_y <- data_valid$class
     
-    X <- find_best_predictors2(formulas=form,train=data_train,valid=data_valid,valid_y=data_valid_y)
+    X <- find_best_predictors(formulas=form,train=data_train,valid=data_valid,valid_y=data_valid_y)
     Y[,i] <- X$meanTPR_TNR
+    Z[,i] <- X$alpha
   }
   Final[,1]  <- X[[2]]
   Final[,2] <- rowMeans(Y)
+  Final[,3] <- rowMeans(Z)
   Final <- Final[order(Final[2],decreasing = T),]
   
-  colnames(Final) <- c("Formula", "Crosval mean of TPR_TNR")
+  colnames(Final) <- c("Formula", "CV_Mean of TNR_TPR"," CV_alpha")
   return(Final[1:top,])
 }
 
 ```
 
+### Cross validating the chosen model and compare it to other models
 ```{r}
-crossvalidate(5, beginner, formulas_2, 5)
+cv_best_models <- function(k, dataset, form, alpha, seed){
+  
+  set.seed(seed)
+  
+  comb <- data.frame(matrix(nrow = k, ncol = 3))
+  colnames(comb) <- c("TPR", "TNR","Metric")
+  Final <- data.frame(matrix(nrow = length(form), ncol = 3))
+  
+  # first, add a selection column to the dataset as before
+  n_samples  <- nrow(dataset)
+  select_vec <- rep(1:k, length.out = n_samples)
+  data_split <- dataset %>% mutate(folds = sample(select_vec))
+  
+  for (i in 1:k) {
+    # split the data in train and validation set
+    data_train <- data_split %>% filter(folds != i)
+    data_valid <- data_split %>% filter(folds == i)
+    
+    data_valid_y <- data_valid$class
+    
+    model <- glm(form, family=binomial, data= data_train)
+    pred_prob <- predict(model, type = "response", newdata = data_valid)
+    pred_lr <- ifelse(pred_prob > as.numeric(alpha), 1,0)
+    cmat_lr <- table(true = data_valid_y, predicted = pred_lr)
+    
+    TN <- cmat_lr[1, 1]
+    FN <- cmat_lr[2, 1]
+    FP <- cmat_lr[1, 2]
+    TP <- cmat_lr[2, 2]
+    
+    comb[i,1] <- TP / (TP + FN)
+    comb[i,2] <- TN / (TN + FP)
+    comb[i,3] <- (comb[i,2]*1.5+comb[i,1])/2
+  }
+  Final[,1]  <- mean(comb[,1])
+  Final[,2] <- mean(comb[,2])
+  Final[,3] <- mean(comb[,3])
+  
+  colnames(Final) <- c("CV_TPR", "CV_TNR","CV_Metric")
+  
+  return(Final)
+}
 ```
+
+### Training Set results from the chosen models
+```{r}
+test_metric <- function(formula, train, test,alpha){
+  fit1 <- glm(formula, family=binomial, data=train)
+  pred_prob <- predict(fit1, type = "response", newdata = test)
+  pred_lr   <- ifelse(pred_prob > as.numeric(alpha), 1,0)
+  confm <- table(true = test$class, predicted = pred_lr)
+  Spec <- confm[2, 2] / (confm[2, 2] + confm[2, 1])
+  Sens <- confm[1, 1] / (confm[1, 1] + confm[1, 2])
+  Metric <- (Sens*1.5+Spec)/2
+  return(list(matrix=confm, Specificty=Spec, Sensitivity=Sens, Metric=Metric))
+}
+```
+
+### Applying the formulas
+```{r}
+mushrooms_begin_x <- beginner %>%
+  dplyr::select(-class)
+```
+
+```{r}
+# Generating the combination of formulas
+formulas_2 <- generate_formulas(p=2,x_vars=mushrooms_begin_x, y_var="class")
+formulas_3 <- generate_formulas(p=3,x_vars=mushrooms_begin_x, y_var="class")
+formulas_4 <- generate_formulas(p=4,x_vars=mushrooms_begin_x, y_var="class")
+formulas_5 <- generate_formulas(p=5,x_vars=mushrooms_begin_x, y_var="class")
+formulas_6 <- generate_formulas(p=6,x_vars=mushrooms_begin_x, y_var="class")
+```
+
+
+```{r}
+# generating the cross-validated results for the best choice of predictors
+pred2 <- cv_best_pred(5, beginner_train, formulas_2, 5)
+pred3 <- cv_best_pred(5, beginner_train, formulas_3, 5)
+pred4 <- cv_best_pred(5, beginner_train, formulas_4, 5)
+pred5 <- cv_best_pred(5, beginner_train, formulas_5, 5)
+pred6 <- cv_best_pred(5, beginner_train, formulas_6, 5)
+```
+
+```{r}
+# comparing the results 
+mean(pred2[,2])
+mean(pred3[,2])
+mean(pred4[,2])
+mean(pred5[,2])
+mean(pred6[,2])
+# not a huge improvement between 3, 4, and 5
+# All of these models would yield good results
+```
+
+```{r}
+# comparison between models
+cv_best_models(5, beginner_train, pred4[1,1], pred4[1,3], 123)
+cv_best_models(5, beginner_train, pred5[1,1], pred5[1,3], 124)
+cv_best_models(5, beginner_train, pred6[1,1], pred6[1,3], 125)
+```
+
+```{r}
+# comparison within models
+cv_best_models(5, beginner_train, pred5[1,1], pred5[1,3], 123) # sticking with this model 
+cv_best_models(5, beginner_train, pred5[2,1], pred5[2,3], 124)
+cv_best_models(5, beginner_train, pred5[3,1], pred5[3,3], 125)
+```
+
+```{r}
+# assessing test set predictions
+test_metric(pred5[1,1], beginner_train, beginner_test,pred5[1,3]) 
+test_metric(pred5[2,1], beginner_train, beginner_test,pred5[2,3])
+
+test_metric(pred6[1,1], beginner_train, beginner_test,pred6[1,3]) # this model performs slightly better in the direction we want as it has less False false negatives, comapred to 5, but also only marginally
+test_metric(pred6[2,1], beginner_train, beginner_test,pred6[2,3])
+```
+
+### Starting argumention for our decision making
+
+One more thought: We might want to play around with different wights for the Sensitivity (not too much difference when I tried with 1.2 and 1.5), feel free to do so
+- More things to do: Think about evaluation methods between the tree based and the regression based method
+
+
+- Our goal is to make it very easy for beginners to see if mushrooms are edible or poisonous. For this reason we are mainly interested in a dimension reduction where we try to have the least amount of predictors which still yield good results. On top of that, are we mainly interested in classifying mushrooms which are actually poisonous as poisonous. That means avoiding to have a lot of false negatives (mushrooms which are actually poisnous, but are classified as edible). For this sake we are even willing to missclassify more mushrooms which are actually edible as poisonous.
+
+- In this regard we opted to choose our own metric based on a balance of specificity and sensitivity, where we give more weight to the sensitivity as this should decrease the false negative rate. Moreover, we apply cross validation in multiple steps so our choice of predictors and also our model comparison is not depending on chance. 
+
+- Finally, we compare the test set metrics (Sens, Spec, and our own Metric) between the different possible models and try to give advise for how to proceed when encountering a mushroom somewhere. 
+
+
 
 
