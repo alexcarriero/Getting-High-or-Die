@@ -43,7 +43,6 @@ pre { /* Code block - determines code spacing between lines */
 ---
 
 --- title page --- how do we do this?? there's not multiple pages on html
---- add the tabs --- shannon pls help us
 
 ```{r setup, echo=FALSE}
 library(knitr)
@@ -103,8 +102,8 @@ mushrooms <-
                        "scaly"   = "y",
                        "smooth"  = "s"), 
          bruises = bruises %>% 
-            fct_recode("true"       = "t",
-                       "false"      = "f"), 
+            fct_recode("true"    = "t",
+                       "false"   = "f"), 
          odor = odor %>%
              fct_recode("almond"     = "a",
                         "anise"      = "l",
@@ -136,91 +135,91 @@ mushrooms <-
              fct_recode("broad"      = "b",
                         "narrow"     = "n"), 
            gill.color = gill.color %>% 
-             fct_recode("black"      ="k",
-                        "brown"      ="n",
-                        "brown"      ="b",
-                        "brown"      ="h",
-                        "gray"       ="g", 
-                        "green"      ="r",
-                        "orange"     ="o",
-                        "pink"       ="p",
-                        "pink"       ="u",
-                        "pink"       ="e",
-                        "white"      ="w",
-                        "yellow"     ="y"),
+             fct_recode("black"      = "k",
+                        "brown"      = "n",
+                        "brown"      = "b",
+                        "brown"      = "h",
+                        "gray"       = "g", 
+                        "green"      = "r",
+                        "orange"     = "o",
+                        "pink"       = "p",
+                        "pink"       = "u",
+                        "pink"       = "e",
+                        "white"      = "w",
+                        "yellow"     = "y"),
            stalk.shape = stalk.shape %>% 
-             fct_recode("enlarging"  ="e",
-                        "tapering"   ="t"), 
+             fct_recode("enlarging"  = "e",
+                        "tapering"   = "t"), 
            stalk.surface.above.ring = stalk.surface.above.ring %>% 
-             fct_recode("fibrous"    ="f",
-                        "scaly"      ="y",
-                        "silky"      ="k",
-                        "smooth"     ="s"), 
+             fct_recode("fibrous"    = "f",
+                        "scaly"      = "y",
+                        "silky"      = "k",
+                        "smooth"     = "s"), 
           stalk.surface.below.ring = stalk.surface.below.ring %>% 
-             fct_recode("fibrous"    ="f",
-                        "scaly"      ="y",
-                        "silky"      ="k",
-                        "smooth"     ="s"), 
+             fct_recode("fibrous"    = "f",
+                        "scaly"      = "y",
+                        "silky"      = "k",
+                        "smooth"     = "s"), 
           stalk.color.above.ring = stalk.color.above.ring %>% 
-            fct_recode("brown"       ="n",
-                       "brown"       ="b",
-                       "brown"       ="c",
-                       "gray"        ="g",
-                       "orange"      ="o",
-                       "pink"        ="p",
-                       "pink"        ="e",
-                       "white"       ="w",
-                       "yellow"      ="y",), 
+            fct_recode("brown"       = "n",
+                       "brown"       = "b",
+                       "brown"       = "c",
+                       "gray"        = "g",
+                       "orange"      = "o",
+                       "pink"        = "p",
+                       "pink"        = "e",
+                       "white"       = "w",
+                       "yellow"      = "y",), 
           stalk.color.below.ring = stalk.color.below.ring %>% 
-            fct_recode("brown"       ="n",
-                       "brown"       ="b",
-                       "brown"       ="c",
-                       "gray"        ="g",
-                       "orange"      ="o",
-                       "pink"        ="p",
-                       "pink"        ="e",
-                       "white"       ="w",
-                       "yellow"      ="y",), 
+            fct_recode("brown"       = "n",
+                       "brown"       = "b",
+                       "brown"       = "c",
+                       "gray"        = "g",
+                       "orange"      = "o",
+                       "pink"        = "p",
+                       "pink"        = "e",
+                       "white"       = "w",
+                       "yellow"      = "y",), 
           veil.color = veil.color %>%
-            fct_recode("brown"       ="n",
-                       "orange"      ="o",
-                       "white"       ="w",
-                       "yellow"      ="y"),
+            fct_recode("brown"       = "n",
+                       "orange"      = "o",
+                       "white"       = "w",
+                       "yellow"      = "y"),
           ring.number = ring.number %>% 
-            fct_recode("none"        ="n",
-                       "one"         ="o",
-                       "two"         ="t"), 
+            fct_recode("none"        = "n",
+                       "one"         = "o",
+                       "two"         = "t"), 
           ring.type = ring.type %>% 
-            fct_recode("evanescent"  ="e",
-                       "flaring"     ="f",
-                       "large"       ="l",
-                       "none"        ="n",
-                       "pendant"     ="p"),
+            fct_recode("evanescent"  = "e",
+                       "flaring"     = "f",
+                       "large"       = "l",
+                       "none"        = "n",
+                       "pendant"     = "p"),
           spore.print.color = spore.print.color %>% 
-            fct_recode("black"   ="k",
-                       "brown"   ="n",
-                       "brown"   ="b",
-                       "brown"   ="h",
-                       "green"   ="r",
-                       "orange"  ="o",
-                       "purple"  ="u",
-                       "white"   ="w",
-                       "yellow"  ="y"), 
+            fct_recode("black"   = "k",
+                       "brown"   = "n",
+                       "brown"   = "b",
+                       "brown"   = "h",
+                       "green"   = "r",
+                       "orange"  = "o",
+                       "purple"  = "u",
+                       "white"   = "w",
+                       "yellow"  = "y"), 
          population = population %>% 
-           fct_recode("group"    ="a",
-                      "group"    ="c",
-                      "group"    ="n",
-                      "group"    ="s",
-                      "group"    ="v",
-                      "solitary" ="y"), 
+           fct_recode("group"    = "a",
+                      "group"    = "c",
+                      "group"    = "n",
+                      "group"    = "s",
+                      "group"    = "v",
+                      "solitary" = "y"), 
          habitat = habitat %>% 
-           fct_recode("grasses"  ="g",
-                      "woods"    ="l",
-                      "grasses"  ="m",
-                      "urban"    ="p",
-                      "urban"    ="u",
-                      "waste"    ="w",
-                      "woods"    ="d"),
+           fct_recode("grasses"  = "g",
+                      "woods"    = "l",
+                      "grasses"  = "m",
+                      "urban"    = "p",
+                      "urban"    = "u",
+                      "waste"    = "w",
+                      "woods"    = "d"),
          class = ifelse(class == "e", 1, 0))
 ```
 
@@ -553,10 +552,9 @@ pred5[1,1]
 Given the set of predictors selected using logistic regression, 
 
 ```{r}
-# Choose best formula from logistic regression 
+# save best formula from logistic regression 
 best_formula <- as.formula(pred5[1,1])
 ```
-
 
 ```{r}
 # Decision Tree 
@@ -569,7 +567,7 @@ dt <- rpart(
 
 ```{r}
 # Random Forest
-rf <- randomForest(class ~ ., beginner_train)
+rf <- randomForest(best_formula, beginner_train)
 rf_importance <- importance(rf)
 
 ggplot(
@@ -609,11 +607,13 @@ perf.metrics <- function(model, test, best_formula, threshold = 0.5, model.name 
   
   if (xgboost) {
     test = model.matrix(best_formula, test)[,-1]
-    pred_class <- ifelse(
-      predict(model, newdata = test) < threshold, 0, 1)
+    pred_prob <- predict(model, type = "prob", newdata = test)
+    pred_class <- ifelse(pred_prob < threshold, 0, 1)
   }
-  else pred_class <- predict(model, type = "class", newdata = test)
-  
+  else{
+    pred_prob  = predict(model, newdata = test)
+    pred_class = ifelse(pred_prob < threshold, 0, 1)
+  }
   confusion.table <- table(
     true      = test.class,
     predicted = pred_class
@@ -631,29 +631,27 @@ perf.metrics <- function(model, test, best_formula, threshold = 0.5, model.name 
   FPR <- FP / (FP + TN)
   PPV <- TP / (TP + FP)
   NPV <- TN / (TN + FN)
-  # new metric
-  
-  if (xgboost) {
-    pred_prob <- predict(model, type = "prob", newdata = test)
-  }
-  else pred_prob <- predict(model, type = "prob", newdata = test)[,2]
+  # ADD CHRISTOPHS+FLORIANS METRIC 
+  # TAKE AWAY METRICS WE DONT CARE ABOUT 
   AUC <- auc(test.class, pred_prob)
   
   data.frame(model.name, accuracy, sensitivity, specificity, FPR, PPV, NPV, AUC)
 }
-# this doesn't work 
 ```
 
 ```{r}
-predict(rf, type = "vote", newdata = beginner_test)
+# restrict test set to contain selected variables 
+test <- 
+  beginner_test %>% 
+  dplyr::select(class, cap.shape,  bruises, stalk.shape, ring.number,  habitat)
+test.class = test$class
 ```
 
 ```{r}
-perf.metrics(rf, beginner_test, best_formula, threshold = 0.5, model.name = NA, xgboost = FALSE)
-```
-
-```{r}
-table(true = beginner_test$class, predicted = ifelse(lr_prob > 0.5, 1, 0))
+perf.metrics(lr,  test, best_formula, threshold = 0.5, model.name = "Logistic Regression")
+perf.metrics(dt,  test, best_formula, threshold = 0.5, model.name = "Decision Tree")
+perf.metrics(rf,  test, best_formula, threshold = 0.5, model.name = "Random Forest")
+perf.metrics(xgb, test, best_formula, threshold = 0.5, model.name = "XGBoost", xgboost = TRUE)
 ```
 
 ```{r}
@@ -673,14 +671,23 @@ probs <- tibble(
 
 probs %>%
   gather(key = "variable", value = "value", -class) %>% 
-  ggplot(aes(x = value, y = class, color = variable)) + 
-  geom_abline(slope = 1, intercept = 0) +
-  geom_smooth(method = stats::loess, se = FALSE) +
+  ggplot(aes(x = value, y = class, color = variable, fill = variable)) + 
+  geom_abline(slope = 1, intercept = 0, size = 1) +
+  geom_smooth(method = stats::loess, se = TRUE) +
   scale_x_continuous(breaks = seq(0, 1, 0.1)) +
   scale_y_continuous(breaks = seq(0, 1, 0.1)) +
+  scale_color_discrete(labels=c('Decision Tree', 'Logistic Regression', 'Random Forest', 'XGBoost'))+
+  scale_fill_brewer( palette = "Set2") +
+  scale_color_brewer(palette = "Set2") +
   xlab("Estimated Probability") +
   ylab("Observed Proportion") +
-  ggtitle("Logistic Regression Calibration Plot Training")
+  ggtitle("Flexible Model Calibration") + 
+  theme_minimal()
+```
+```{r}
+# check with package output 
+library(CalibrationCurves)
+val.prob.ci.2(probs$lr, probs$class) 
 ```
 
 ## 3. Results
