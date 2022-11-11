@@ -308,7 +308,7 @@ beginner_test  <-
 ```
 
 ```{r}
-rm(data, mushrooms, mushrooms_split, mushrooms_test, mushrooms_train)
+rm(mushrooms, mushrooms_split, mushrooms_test, mushrooms_train)
 ```
 
 
@@ -602,13 +602,17 @@ lr <- glm(best_formula, family = "binomial", data = beginner_train)
 
 ```{r}
 # numeric performance metrics 
-perf.metrics <- function(model, test, best_formula, threshold = 0.5, model.name = NA, xgboost = FALSE) {
+perf.metrics <- function(model, test, best_formula, threshold = 0.5, model.name = NA, lr = FALSE, xgboost = FALSE) {
   test.class = test$class
   
   if (xgboost) {
     test = model.matrix(best_formula, test)[,-1]
     pred_prob <- predict(model, type = "prob", newdata = test)
     pred_class <- ifelse(pred_prob < threshold, 0, 1)
+  }
+  if (lr){
+    pred_prob  = predict(model, newdata = test, type = "response")
+    pred_class = ifelse(pred_prob < threshold, 0, 1)
   }
   else{
     pred_prob  = predict(model, newdata = test)
@@ -648,12 +652,11 @@ test.class = test$class
 ```
 
 ```{r}
-perf.metrics(lr,  test, best_formula, threshold = 0.5, model.name = "Logistic Regression")
+perf.metrics(lr,  test, best_formula, threshold = 0.5, model.name = "Logistic Regression", lr = TRUE)
 perf.metrics(dt,  test, best_formula, threshold = 0.5, model.name = "Decision Tree")
 perf.metrics(rf,  test, best_formula, threshold = 0.5, model.name = "Random Forest")
 perf.metrics(xgb, test, best_formula, threshold = 0.5, model.name = "XGBoost", xgboost = TRUE)
 ```
-
 ```{r}
 # calibration plots 
 lr_prob <- predict(lr,  newdata = beginner_test, type = "response")
@@ -684,6 +687,7 @@ probs %>%
   ggtitle("Flexible Model Calibration") + 
   theme_minimal()
 ```
+
 ```{r}
 # check with package output 
 library(CalibrationCurves)
