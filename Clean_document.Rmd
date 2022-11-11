@@ -223,7 +223,7 @@ generate_formulas <- function(p, x_vars, y_var) {
 }
 ```
 
-## Function to find best predictors and best alpha based on chosen metric (Balance from sens and spec with more weight for sens)
+### Function to find best predictors and best alpha based on chosen metric (Balance from sens and spec with more weight for sens)
 
 ```{r}
 # this formula should not be used for itself, but just in combination with the cross validation formula for finding the best predictors
