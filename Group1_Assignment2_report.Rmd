@@ -2,8 +2,43 @@
 title: "Supervised Learning and Visualisation: Assignment 2"
 author: "Group 1: Florian van Leeuwen, AlexCarriero, Christoph Voltzke, Judith Neve"
 date: "13/11/2022"
-output: html_document
+output: 
+   bookdown::html_document2:
+    toc: true
+    toc_depth: 3
+    toc_float: true
+    number_sections: false
+    theme: paper
 ---
+
+<style type="text/css">
+  
+body{ /* Normal  */
+  font-size: 12px;
+  }
+td {  /* Table  */
+  font-size: 12px;
+}
+h1.title {
+  font-size: 18px;
+  color: DarkBlue;
+}
+h1 { /* Header 1 */
+  font-size: 18px;
+}
+h2 { /* Header 2 */
+  font-size: 18px;
+}
+h3 { /* Header 3 */
+  font-size: 18px;
+}
+code.r{ /* Code block */
+  font-size: 12px;
+}
+pre { /* Code block - determines code spacing between lines */
+  font-size: 14px;
+}
+</style>
 
 ---
 
@@ -217,13 +252,13 @@ table1 <- tibble(
     "black, brown (includes brown, buff, chocolate), gray, green, orange, pink (includes pink, purple, red), white, yellow",
     "enlarging, tapering",
     "none, one, two",
-    "group, solitary",
+    "group (includes abundant, clustered, numerous, scattered, several), solitary",
     "grasses (includes grasses, meadows), woods (includes woods, leaves), urban (includes paths, urban), waste"
   )
 )
 
 table1 %>%
-  kbl(format = "html", caption = "Table 1. Predictors in the dataset.") %>% 
+  kbl(format = "html", caption = "Predictors in the dataset.") %>% 
   kable_styling("striped") 
 ```
 
@@ -278,7 +313,7 @@ rm(data, mushrooms, mushrooms_split, mushrooms_test, mushrooms_train)
 ```
 
 
-### Logistic regression
+### 2.1 Logistic regression
 
 As mentioned in the introduction it is the goal of this assignment to make a mushroom hunt available for everyone. This means that we need to test how many characteristics are needed to reach a satisfying level of accuracy. As we are beginners ourselves and we tried to identify some mushrooms based on the given characteristics we follow the credo of using the least amount of predictors as possible. 
 For this reason we apply a dimension reduction technique which compares different combinations of predictors and compared on a chosen metric gives us the best set of predictors for our classification problem. 
@@ -295,9 +330,9 @@ For these comparisons we mainly took the sensitivity, accuracy and our chosen me
 
 We believe that we identified the best set of predictors based on the training data and that in this way we are also able to make a decision on how many predictors are actually necessary to get a satisfying performance. 
 
-#### Generating all possible combination of predictors
 
 ```{r}
+# Generating all possible combination of predictors
 generate_formulas <- function(p, x_vars, y_var) {
   x_vars <- colnames(x_vars)
   # Input checking
@@ -313,9 +348,8 @@ generate_formulas <- function(p, x_vars, y_var) {
 }
 ```
 
-#### Function to find best predictors and best alpha based on chosen metric (Balance from sens and spec with more weight for sens)
-
 ```{r}
+# Function to find best predictors and best alpha based on chosen metric (Balance from sens and spec with more weight for sens)
 # this formula should not be used for itself, but just in combination with the cross validation formula for finding the best predictors
 find_best_predictors <- function(formulas,train,valid, valid_y){
   
@@ -369,8 +403,8 @@ return(out)
 }
 ```
 
-#### Cross-validating the choice of predictors
 ```{r}
+# Cross-validating the choice of predictors
 cv_best_pred <- function(k, dataset, form, top){
   
   Y <- data.frame(matrix(nrow = length(form), ncol = k))
@@ -404,8 +438,9 @@ cv_best_pred <- function(k, dataset, form, top){
 
 ```
 
-#### Cross validating the chosen model and compare it to other models
 ```{r}
+# Cross validating the chosen model and compare it to other models
+
 cv_best_models <- function(k, dataset, form, alpha, seed){
   
   set.seed(seed)
@@ -450,8 +485,9 @@ cv_best_models <- function(k, dataset, form, alpha, seed){
 }
 ```
 
-#### Training Set results from the chosen models
 ```{r}
+# Training Set results from the chosen models
+
 test_metric <- function(formula, train, test,alpha){
   fit1 <- glm(formula, family=binomial, data=train)
   pred_prob <- predict(fit1, type = "response", newdata = test)
@@ -464,32 +500,26 @@ test_metric <- function(formula, train, test,alpha){
 }
 ```
 
-#### Applying the formulas
 ```{r}
+# Applying the formulas:
+
 mushrooms_begin_x <- beginner %>%
   dplyr::select(-class)
-```
 
-```{r}
-# Generating the combination of formulas
+# generating the combination of formulas
 formulas_2 <- generate_formulas(p=2,x_vars=mushrooms_begin_x, y_var="class")
 formulas_3 <- generate_formulas(p=3,x_vars=mushrooms_begin_x, y_var="class")
 formulas_4 <- generate_formulas(p=4,x_vars=mushrooms_begin_x, y_var="class")
 formulas_5 <- generate_formulas(p=5,x_vars=mushrooms_begin_x, y_var="class")
 formulas_6 <- generate_formulas(p=6,x_vars=mushrooms_begin_x, y_var="class")
-```
 
-
-```{r}
 # generating the cross-validated results for the best choice of predictors
 pred2 <- cv_best_pred(5, beginner_train, formulas_2, 5)
 pred3 <- cv_best_pred(5, beginner_train, formulas_3, 5)
 pred4 <- cv_best_pred(5, beginner_train, formulas_4, 5)
 pred5 <- cv_best_pred(5, beginner_train, formulas_5, 5)
 pred6 <- cv_best_pred(5, beginner_train, formulas_6, 5)
-```
 
-```{r}
 # comparing the results 
 pred2
 pred3
@@ -518,16 +548,142 @@ test_metric(pred5[1,1], beginner_train, beginner_test,pred5[1,3])
 pred5[1,1]
 ```
 
-### Trees
+### 2.2 Trees
 
 Given the set of predictors selected using logistic regression, 
 
-
 ```{r}
-
+# Choose best formula from logistic regression 
+best_formula <- as.formula(pred5[1,1])
 ```
 
-## Results
+
+```{r}
+# Decision Tree 
+dt <- rpart(
+  best_formula,
+  data = beginner_train
+  )
+# rpart.plot(dt)
+```
+
+```{r}
+# Random Forest
+rf <- randomForest(class ~ ., beginner_train)
+rf_importance <- importance(rf)
+
+ggplot(
+  mapping = aes(
+    x = rownames(rf_importance),
+    y = c(rf_importance)
+    )
+  ) +
+  geom_col()
+```
+
+```{r}
+# XG Boost 
+train_x <- model.matrix(best_formula, beginner_train)[,-1]
+train_y <- beginner_train$class
+xgb <- xgboost(
+  data  = train_x,
+  label = train_y, 
+  max.depth = 10,
+  eta = 1,
+  nthread = 4,
+  nrounds = 4,
+  objective = "binary:logistic",
+  verbose = 2)
+```
+
+### 2.3 Performance Metrics 
+
+```{r}
+lr <- glm(best_formula, family = "binomial", data = beginner_train)
+```
+
+```{r}
+# numeric performance metrics 
+perf.metrics <- function(model, test, best_formula, threshold = 0.5, model.name = NA, xgboost = FALSE) {
+  test.class = test$class
+  
+  if (xgboost) {
+    test = model.matrix(best_formula, test)[,-1]
+    pred_class <- ifelse(
+      predict(model, newdata = test) < threshold, 0, 1)
+  }
+  else pred_class <- predict(model, type = "class", newdata = test)
+  
+  confusion.table <- table(
+    true      = test.class,
+    predicted = pred_class
+    )
+  print(confusion.table)
+  
+  TN <- confusion.table[1,1]
+  TP <- confusion.table[2,2]
+  FP <- confusion.table[1,2]
+  FN <- confusion.table[2,1]
+  
+  accuracy <- (TN + TP) / sum(confusion.table)
+  sensitivity <- TP / (TP + FN)
+  specificity <- TN / (TN + FP)
+  FPR <- FP / (FP + TN)
+  PPV <- TP / (TP + FP)
+  NPV <- TN / (TN + FN)
+  # new metric
+  
+  if (xgboost) {
+    pred_prob <- predict(model, type = "prob", newdata = test)
+  }
+  else pred_prob <- predict(model, type = "prob", newdata = test)[,2]
+  AUC <- auc(test.class, pred_prob)
+  
+  data.frame(model.name, accuracy, sensitivity, specificity, FPR, PPV, NPV, AUC)
+}
+# this doesn't work 
+```
+
+```{r}
+predict(rf, type = "vote", newdata = beginner_test)
+```
+
+```{r}
+perf.metrics(rf, beginner_test, best_formula, threshold = 0.5, model.name = NA, xgboost = FALSE)
+```
+
+```{r}
+table(true = beginner_test$class, predicted = ifelse(lr_prob > 0.5, 1, 0))
+```
+
+```{r}
+# calibration plots 
+lr_prob <- predict(lr,  newdata = beginner_test, type = "response")
+dt_prob <- predict(dt,  newdata = beginner_test)
+xgb_prob<- predict(xgb, newdata = model.matrix(best_formula, beginner_test)[,-1])
+rf_prob <- predict(rf,  newdata = beginner_test)
+
+probs <- tibble(
+  class = beginner_test$class, 
+  lr    = lr_prob,
+  dt    = dt_prob, 
+  rf    = rf_prob,
+  xg    = xgb_prob, 
+) 
+
+probs %>%
+  gather(key = "variable", value = "value", -class) %>% 
+  ggplot(aes(x = value, y = class, color = variable)) + 
+  geom_abline(slope = 1, intercept = 0) +
+  geom_smooth(method = stats::loess, se = FALSE) +
+  scale_x_continuous(breaks = seq(0, 1, 0.1)) +
+  scale_y_continuous(breaks = seq(0, 1, 0.1)) +
+  xlab("Estimated Probability") +
+  ylab("Observed Proportion") +
+  ggtitle("Logistic Regression Calibration Plot Training")
+```
+
+## 3. Results
 
 something something about the performance of each model
 
@@ -536,6 +692,6 @@ compare the trees with each other
 
 do we need to do any advanced model (no these are good)
 
-## Discussion
+## 4. Discussion
 
 pros and cons of regression and trees, which one we want to use
