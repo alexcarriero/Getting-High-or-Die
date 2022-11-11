@@ -1,14 +1,25 @@
 ---
-title: "Clean_doc"
-author: "Florian van Leeuwen"
-date: "10/26/2022"
+title: "Supervised Learning and Visualisation: Assignment 2"
+author: "Group 1: Florian van Leeuwen, AlexCarriero, Christoph Voltzke, Judith Neve"
+date: "13/11/2022"
 output: html_document
 ---
 
---- title page ---
---- add the tabs ---
+---
 
-```{r, warning = F, message = F}
+--- title page --- how do we do this?? there's not multiple pages on html
+--- add the tabs --- shannon pls help us
+
+```{r setup, echo=FALSE}
+library(knitr)
+knitr::opts_chunk$set(
+  message = FALSE, 
+  warning = FALSE,
+  echo = FALSE
+)
+```
+
+```{r libraries}
 library(readr)
 library(tidyverse)
 library(psych)
@@ -22,18 +33,25 @@ library(jtools)
 library(class)
 library(ISLR)
 library(Matrix)
+library(kableExtra)
 ```
 
-## Tidy the data
+## Introduction
 
-```{r}
+The focus of this project is the accurate classification of mushrooms as edible or poisonous using an [open dataset from Kaggle](https://www.kaggle.com/datasets/uciml/mushroom-classification). The end goal is to develop an app for mushroom foragers of all levels, that will reliably classify a mushroom as edible or poisonous. In this project, we develop the classification algorithms that will be used within this app. We predict whether a mushroom is edible, that is, the given probabilities are the probability that a mushroom is edible.\
+\
+The dataset contains 8124 observations of 22 variables (plus the class). All variables are categorical and describe various characteristics of mushrooms, detailed in Table 1. These characteristics range from easily understandable (e.g., cap colour) to senseless for people unfamiliar with mushrooms (e.g., stalk root). In order for our app to be usable by all, we reduce the number of variables in order to only include the most easily understandable variables. Furthermore, we reduce the number of options for some of these variables by grouping certain categories together in order to limit misspecification of predictors (e.g., brown and buff will be both called brown).\
+\
+We will first develop models using only this reduced set of predictors; if model performance is unsatisfactory, we will consider some further models that include more predictors.
+
+```{r import data}
 # import data
-data<- read.csv("mushrooms.csv")
+mushrooms <- read.csv("mushrooms.csv")
 ```
 
-```{r}
+```{r tidy data}
 # tidy data -- merge redundant categories 
-mushrooms <- data %>% 
+mushrooms <- mushrooms %>% 
     mutate(across(where(is.character), as_factor))%>%
     dplyr::select(-veil.type, -stalk.root)%>%     
     mutate(cap.shape = cap.shape %>% 
@@ -166,15 +184,101 @@ mushrooms <- data %>%
                       "urban"    ="p",
                       "urban"    ="u",
                       "waste"    ="w",
-                      "woods"    ="d"))
+                      "woods"    ="d"),
+         class = ifelse(class == "e", 1, 0))
 ```
 
-```{r} 
+```{r}
+table1 <- tibble(
+  Variable = c(
+    "cap shape",
+    "cap surface",
+    "cap color",
+    "bruises",
+    "odor",
+    "gill attachment",
+    "gill spacing",
+    "gill size",
+    "gill color",
+    "stalk shape",
+    "stalk root",
+    "stalk surface above ring",
+    "stalk surface below ring",
+    "stalk color above ring",
+    "stalk color below ring",
+    "veil type",
+    "veil color",
+    "ring number",
+    "ring type",
+    "spore print color",
+    "population",
+    "habitat"
+  ),
+  `Original levels` = c(
+    "bell, conical, convex, flat, knobbed, sunken",
+    "fibrous, grooves, scaly, smooth",
+    "brown, buff, cinnamon, gray, green, pink, purple, red, white, yellow",
+    "yes, no",
+    "almond, anise, creosote, fishy, foul, musty, none, pungent, spicy",
+    "attached, descending, free, notched",
+    "close, crowded, distant",
+    "broad, narrow",
+    "black, brown, buff, chocolate, gray, green, orange, pink, purple, red, white, yellow",
+    "enlarging, tapering",
+    "bulbous, club, cup, equal, rhizomorphs, rooted, missing",
+    "fibrous, scaly, silky, smooth",
+    "fibrous, scaly, silky, smooth",
+    "brown, buff, cinnamon, gray, orange, pink, red, white, yellow",
+    "brown, buff, cinnamon, gray, orange, pink, red, white, yellow",
+    "partial, universal",
+    "brown, orange, white, yellow",
+    "none, one, two",
+    "cobwebby, evanescent, flaring, large, none, pendant, sheathing, zone",
+    "black, brown, buff, chocolate, green, orange, purple, white, yellow",
+    "abundant, clustered, numerous, scattered, several, solitary",
+    "grasses, leaves, meadows, paths, urban, waste, woods"
+  ),
+  `Included levels` = c(
+    "bell, conical, convex, flat, knobbed, sunken",
+    "-",
+    "brown (includes brown, buff, cinnamon), gray, green, pink (includes pink, purple, red), white, yellow",
+    "yes, no",
+    "-",
+    "-",
+    "-",
+    "-",
+    "black, brown (includes brown, buff, chocolate), gray, green, orange, pink (includes pink, purple, red), white, yellow",
+    "enlarging, tapering",
+    "-",
+    "-",
+    "-",
+    "-",
+    "-",
+    "-",
+    "-",
+    "none, one, two",
+    "-",
+    "-",
+    "group, solitary",
+    "grasses (includes grasses, meadows), woods (includes woods, leaves), urban (includes paths, urban), waste"
+  )
+)
+
+table1 %>%
+  kbl(format = "html", caption = "Table 1. Predictors in the dataset.") %>% 
+  kable_styling("striped") 
+```
+
+## Methods
+
+We split the dataset into a training dataset, which will be used to fit the candidate models, and a testing dataset, which will be used to evaluate and compare the models. The training dataset contains 80% of the observations in the full dataset. All models will be evaluated using something something (metrics & justification)
+
+```{r test and train} 
 # set seed 
 set.seed(191)
 
 # test and train
-n = dim(mushrooms)[1]
+n <- nrow(mushrooms)
 mushrooms_split <- mushrooms %>% 
                    mutate(split = sample(rep(c("train", "test"), 
                                              times = c(round(.8*n), round(.2*n)))))
@@ -201,11 +305,37 @@ beginner_train <- mushrooms_train %>%
 beginner_test  <- mushrooms_test %>% 
                   dplyr::select(class, cap.shape, cap.color, bruises, gill.color,
                                 stalk.shape, ring.number, population, habitat)
+                
+
+# advanced 
+advanced       <- mushrooms 
+advanced_train <- mushrooms_train
+advanced_test  <- mushrooms_test
 ```
 
-## Logistic regression
+```{r}
+rm(data, mushrooms, mushrooms_split, mushrooms_test, mushrooms_train)
+```
 
-### Generating all possible combination of predictors
+
+### Logistic regression
+
+As mentioned in the introduction it is the goal of this assignment to make a mushroom hunt available for everyone. This means that we need to test how many characteristics are needed to reach a satisfying level of accuracy. As we are beginners ourselve and we tried to identify some mushrooms based on the given characteristics we follow the credo of using the least amount of predictors as possible. 
+For this reason we apply a dimension reduction technique which compares different combinations of predictors and compared on a chosen metric gives us the best set of predictors for our classification problem. 
+
+As our main metric to choose the set of predictors we use the balanced accuracy $(Sensitifity + Specificity)/2$, but adjust it a little bit to also account for our goal to mainly classify mushrooms which are actually poisonous as poisonous. That means avoiding to have a lot of false negatives (mushrooms which are actually poisonous, but are classified as edible). For this sake we are even willing to miss classify more mushrooms which are actually edible as poisonous. Therefore, our choice of evaluation metric is a weighted balanced accuracy, where we ive more weight to the sensitivity as this should decrease the false negative rate $(Sensitifity*1.5 + Specificity)/2$.
+
+For this selection of predictors we also wanted to test different thresholds for classifying a probability based on the given model as edible or poisonous. Therefore, we applied different thresholds and choose for each set of predictors the threshold were our chosen metric has its maximum value. 
+
+In order to not rely on chance in our selection we applied 5-fold cross-validation and averaged the results over the folds. In this way we obtained the best subset of predictors as well as the corresponding threshold value based on the training set. 
+
+Next we applied cross-validation again to compare the performance first on the training set between the different candidate models and also evaluated the performance on the test set. 
+
+For these comparisons we mainly took the sensitivity, accuracy and our chosen metric into account.
+
+We believe that we identified the best set of predictors based on the training data and that in this way we are also able to make a decision on how many predictors are actually necessary to get a satisfying performance. 
+
+#### Generating all possible combination of predictors
 
 ```{r}
 generate_formulas <- function(p, x_vars, y_var) {
@@ -223,7 +353,7 @@ generate_formulas <- function(p, x_vars, y_var) {
 }
 ```
 
-### Function to find best predictors and best alpha based on chosen metric (Balance from sens and spec with more weight for sens)
+#### Function to find best predictors and best alpha based on chosen metric (Balance from sens and spec with more weight for sens)
 
 ```{r}
 # this formula should not be used for itself, but just in combination with the cross validation formula for finding the best predictors
@@ -279,8 +409,7 @@ return(out)
 }
 ```
 
-
-### Cross-validating the choice of predictors
+#### Cross-validating the choice of predictors
 ```{r}
 cv_best_pred <- function(k, dataset, form, top){
   
@@ -315,7 +444,7 @@ cv_best_pred <- function(k, dataset, form, top){
 
 ```
 
-### Cross validating the chosen model and compare it to other models
+#### Cross validating the chosen model and compare it to other models
 ```{r}
 cv_best_models <- function(k, dataset, form, alpha, seed){
   
@@ -361,7 +490,7 @@ cv_best_models <- function(k, dataset, form, alpha, seed){
 }
 ```
 
-### Training Set results from the chosen models
+#### Training Set results from the chosen models
 ```{r}
 test_metric <- function(formula, train, test,alpha){
   fit1 <- glm(formula, family=binomial, data=train)
@@ -375,7 +504,7 @@ test_metric <- function(formula, train, test,alpha){
 }
 ```
 
-### Applying the formulas
+#### Applying the formulas
 ```{r}
 mushrooms_begin_x <- beginner %>%
   dplyr::select(-class)
@@ -402,11 +531,11 @@ pred6 <- cv_best_pred(5, beginner_train, formulas_6, 5)
 
 ```{r}
 # comparing the results 
-mean(pred2[,2])
-mean(pred3[,2])
-mean(pred4[,2])
-mean(pred5[,2])
-mean(pred6[,2])
+pred2
+pred3
+pred4
+pred5
+pred6
 # not a huge improvement between 3, 4, and 5
 # All of these models would yield good results
 ```
@@ -414,38 +543,37 @@ mean(pred6[,2])
 ```{r}
 # comparison between models
 cv_best_models(5, beginner_train, pred4[1,1], pred4[1,3], 123)
-cv_best_models(5, beginner_train, pred5[1,1], pred5[1,3], 124)
-cv_best_models(5, beginner_train, pred6[1,1], pred6[1,3], 125)
+cv_best_models(5, beginner_train, pred5[1,1], pred5[1,3], 123) # this seems to be the best model
+cv_best_models(5, beginner_train, pred6[1,1], pred6[1,3], 123)
 ```
 
-```{r}
-# comparison within models
-cv_best_models(5, beginner_train, pred5[1,1], pred5[1,3], 123) # sticking with this model 
-cv_best_models(5, beginner_train, pred5[2,1], pred5[2,3], 124)
-cv_best_models(5, beginner_train, pred5[3,1], pred5[3,3], 125)
-```
 
 ```{r}
 # assessing test set predictions
 test_metric(pred5[1,1], beginner_train, beginner_test,pred5[1,3]) 
-test_metric(pred5[2,1], beginner_train, beginner_test,pred5[2,3])
-
-test_metric(pred6[1,1], beginner_train, beginner_test,pred6[1,3]) # this model performs slightly better in the direction we want as it has less False false negatives, comapred to 5, but also only marginally
-test_metric(pred6[2,1], beginner_train, beginner_test,pred6[2,3])
 ```
 
-### Starting argumention for our decision making
+```{r}
+# Final formula for the trees
+pred5[1,1]
+```
 
-One more thought: We might want to play around with different wights for the Sensitivity (not too much difference when I tried with 1.2 and 1.5), feel free to do so
-- More things to do: Think about evaluation methods between the tree based and the regression based method
+### Trees
 
+something something, what are we doing and why and how are we making it more complex
 
-- Our goal is to make it very easy for beginners to see if mushrooms are edible or poisonous. For this reason we are mainly interested in a dimension reduction where we try to have the least amount of predictors which still yield good results. On top of that, are we mainly interested in classifying mushrooms which are actually poisonous as poisonous. That means avoiding to have a lot of false negatives (mushrooms which are actually poisnous, but are classified as edible). For this sake we are even willing to missclassify more mushrooms which are actually edible as poisonous.
+```{r}
+```
 
-- In this regard we opted to choose our own metric based on a balance of specificity and sensitivity, where we give more weight to the sensitivity as this should decrease the false negative rate. Moreover, we apply cross validation in multiple steps so our choice of predictors and also our model comparison is not depending on chance. 
+## Results
 
-- Finally, we compare the test set metrics (Sens, Spec, and our own Metric) between the different possible models and try to give advise for how to proceed when encountering a mushroom somewhere. 
+something something about the performance of each model
 
+compare the logistic regressions with each other
+compare the trees with each other
 
+do we need to do any advanced model (no these are good)
 
+## Discussion
 
+pros and cons of regression and trees, which one we want to use

@@ -1,0 +1,262 @@
+---
+title: "Judith's trees"
+author: "Judith Neve"
+date: '2022-11-01'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+RUN CLEAN_DOCUMENT BEFORE THIS ONE
+
+```{r}
+library(pROC)
+```
+
+# Some functions for performance metrics
+
+NOTE: no calibration in this doc
+
+```{r}
+perf.metrics <- function(model, test, model.name = NA, xgboost = FALSE) {
+  test.class = test$class
+  
+  if (xgboost) {
+    test = model.matrix(class ~ ., test)[,-1]
+    pred_class <- ifelse(
+      predict(model, newdata = test) < 0.5, 
+      "e", "p"
+      )
+  }
+  
+  else pred_class <- predict(model, type = "class", newdata = test)
+  
+  confusion.table <- table(
+    true      = test.class,
+    predicted = pred_class
+    )
+  print(confusion.table)
+  
+  TN <- confusion.table[1,1]
+  TP <- confusion.table[2,2]
+  FP <- confusion.table[1,2]
+  FN <- confusion.table[2,1]
+  
+  accuracy <- (TN + TP) / sum(confusion.table)
+  sensitivity <- TP / (TP + FN)
+  specificity <- TN / (TN + FP)
+  FPR <- FP / (FP + TN)
+  PPV <- TP / (TP + FP)
+  NPV <- TN / (TN + FN)
+  
+  if (xgboost) {
+    pred_prob <- predict(model, type = "prob", newdata = test)
+  }
+  else pred_prob <- predict(model, type = "prob", newdata = test)[,2]
+  AUC <- auc(test.class, pred_prob)
+  
+  data.frame(model.name, accuracy, sensitivity, specificity, FPR, PPV, NPV, AUC)
+}
+```
+
+
+# Beginner models
+
+## Tree
+
+Pro: visualisation
+Con: risk of overfitting
+
+### Fitting it
+
+```{r}
+beginner_tree <- rpart(
+  class ~ .,
+  data = beginner_train
+  )
+rpart.plot(beginner_tree)
+```
+
+### Evaluating it
+
+```{r}
+model.evaluations <- perf.metrics(beginner_tree, beginner_test, model.name = "Tree, beginner")
+model.evaluations
+```
+
+## Random forest
+
+Con (if performs worse than logistic regression): hiker can't use it manually
+
+### Fitting it
+
+```{r}
+# compare this to alex's cross-validated one
+beginner_rf <- randomForest(class ~ ., beginner_train)
+beginner_rf_importance <- importance(beginner_rf)
+
+ggplot(
+  mapping = aes(
+    x = rownames(beginner_rf_importance),
+    y = c(beginner_rf_importance)
+    )
+  ) +
+  geom_col()
+```
+
+### Evaluating it
+
+```{r}
+model.evaluations <- rbind(
+  model.evaluations,
+  perf.metrics(beginner_rf, beginner_test, model.name = "RF, beginner")
+  )
+model.evaluations # it's better on all the metrics
+```
+
+## xgboost
+
+### Fitting it
+
+```{r}
+train_x <- model.matrix(class ~ ., beginner_train)[,-1]
+train_y <- as.numeric(beginner_train$class) - 1
+xgboost_train <- xgboost(data  = train_x,
+                         label = train_y, 
+                         max.depth = 10,
+                         eta = 1,
+                         nthread = 4,
+                         nrounds = 4,
+                         objective = "binary:logistic",
+                         verbose = 2)
+```
+
+### Evaluating it
+
+```{r}
+model.evaluations <- rbind(
+  model.evaluations,
+  perf.metrics(xgboost_train, beginner_test, xgboost = TRUE, model.name = "xgboost, beginner")
+  )
+model.evaluations
+```
+
+
+# Advanced models
+
+## Tree
+
+Pro: visualisation
+Con: risk of overfitting
+
+### Fitting it
+
+```{r}
+advanced_tree <- rpart(
+  class ~ .,
+  data = advanced_train
+  )
+rpart.plot(advanced_tree)
+```
+
+### Evaluating it
+
+```{r}
+model.evaluations <- rbind(
+  model.evaluations,
+  perf.metrics(advanced_tree, advanced_test, model.name = "Tree, advanced")
+)
+model.evaluations
+```
+
+## Random forest
+
+Con (if performs worse than logistic regression): hiker can't use it manually
+
+### Fitting it
+
+```{r}
+advanced_rf <- randomForest(class ~ ., advanced_train)
+advanced_rf_importance <- importance(advanced_rf)
+
+ggplot(
+  mapping = aes(
+    x = rownames(advanced_rf_importance),
+    y = c(advanced_rf_importance)
+    )
+  ) +
+  geom_col()
+```
+
+### Evaluating it
+
+```{r}
+model.evaluations <- rbind(
+  model.evaluations,
+  perf.metrics(advanced_rf, advanced_test, model.name = "RF, advanced")
+  )
+model.evaluations # it's better on all the metrics
+```
+
+## xgboost
+
+### Fitting it
+
+```{r}
+train_x <- model.matrix(class ~ ., advanced_train)[,-1]
+train_y <- as.numeric(advanced_train$class) - 1
+xgboost_train <- xgboost(data  = train_x,
+                         label = train_y, 
+                         max.depth = 10,
+                         eta = 1,
+                         nthread = 4,
+                         nrounds = 4,
+                         objective = "binary:logistic",
+                         verbose = 2)
+```
+
+### Evaluating it
+
+```{r}
+model.evaluations <- rbind(
+  model.evaluations,
+  perf.metrics(xgboost_train, advanced_test, xgboost = TRUE, model.name = "xgboost, advanced")
+  )
+```
+
+# Comparing advanced to beginner: are they a lot better?
+
+```{r}
+model.evaluations
+```
+
+# Calibration stuff
+
+```{r}
+# calibration plots 
+dt_prob <- predict(beginner_tree, newdata = beginner_test)
+xgb_prob<- predict(xgboost_train, newdata = model.matrix(class ~ ., beginner_test)[,-1])
+rf_prob <- predict(beginner_rf, newdata = beginner_test, type = "prob")
+
+probs <- tibble(
+  class = beginner_test$class, 
+  dt    = dt_prob[,2], 
+  rf    = rf_prob[,2],
+  xg    = xgb_prob, 
+) %>% 
+  mutate(class = ifelse(class == "e", 1, 0))
+
+probs %>%
+  gather(key = "variable", value = "value", -class) %>% 
+  ggplot(aes(x = value, y = class, color = variable)) + 
+  geom_abline(slope = 1, intercept = 0) +
+  geom_smooth(method = stats::loess, se = FALSE) +
+  scale_x_continuous(breaks = seq(0, 1, 0.1)) +
+  scale_y_continuous(breaks = seq(0, 1, 0.1)) +
+  xlab("Estimated Probability") +
+  ylab("Observed Proportion") +
+  ggtitle("Logistic Regression Calibration Plot Training")
+```
+
