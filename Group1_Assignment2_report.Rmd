@@ -36,13 +36,13 @@ library(Matrix)
 library(kableExtra)
 ```
 
-## Introduction
+## 1. Introduction
 
-The focus of this project is the accurate classification of mushrooms as edible or poisonous using an [open dataset from Kaggle](https://www.kaggle.com/datasets/uciml/mushroom-classification). The end goal is to develop an app for mushroom foragers of all levels, that will reliably classify a mushroom as edible or poisonous. In this project, we develop the classification algorithms that will be used within this app. We predict whether a mushroom is edible, that is, the given probabilities are the probability that a mushroom is edible.\
+The focus of this project is to develop a model which can accurately classify mushrooms as edible or poisonous using an [open dataset from Kaggle](https://www.kaggle.com/datasets/uciml/mushroom-classification). The end goal is to develop an app for mushroom foragers of all levels, that, using our model, will reliably classify a mushroom as edible or poisonous, given a set of input criteria. In this project, we consider a variety of classification algorithms, compare their performance and ultimately, select a final model to be used in the app. For all models, we predict whether a mushroom is edible, that is, all models predict the probability that a given mushroom is edible.  \
 \
-The dataset contains 8124 observations of 22 variables (plus the class). All variables are categorical and describe various characteristics of mushrooms, detailed in Table 1. These characteristics range from easily understandable (e.g., cap colour) to senseless for people unfamiliar with mushrooms (e.g., stalk root). In order for our app to be usable by all, we reduce the number of variables in order to only include the most easily understandable variables. Furthermore, we reduce the number of options for some of these variables by grouping certain categories together in order to limit misspecification of predictors (e.g., brown and buff will be both called brown).\
-\
-We will first develop models using only this reduced set of predictors; if model performance is unsatisfactory, we will consider some further models that include more predictors.
+The dataset contains 8124 observations of 22 variables (plus the class). All variables are categorical and describe various characteristics of mushrooms.  Mushroom characteristics range from easily understandable (e.g., cap colour) to senseless for people unfamiliar with mushrooms (e.g., stalk root). In order for our app to be usable by all, we reduce the number of variables in order to only include the most easily understandable variables.  Eight candidate predictors were selected and are detailed in Table 1.  Furthermore, we reduce the number of options for some of these variables by grouping certain categories together in order to limit misspecification of predictors (e.g., brown and buff will be both called brown).\
+
+* should we include a description of what each variable is (like what a mushroom cap is and gill etc.?)... could add it as a column in the table?
 
 ```{r import data}
 # import data
@@ -51,25 +51,26 @@ mushrooms <- read.csv("mushrooms.csv")
 
 ```{r tidy data}
 # tidy data -- merge redundant categories 
-mushrooms <- mushrooms %>% 
-    mutate(across(where(is.character), as_factor))%>%
-    dplyr::select(-veil.type, -stalk.root)%>%     
-    mutate(cap.shape = cap.shape %>% 
-             fct_recode("bell"    = "b",
-                        "conical" = "c",
-                        "convex"  = "x",
-                        "flat"    = "f", 
-                        "knobbed" = "k",
-                        "sunken"  = "s"),
-           cap.surface = cap.surface %>% 
-             fct_recode("fibrous" = "f",
-                        "grooves" = "g",
-                        "scaly"   = "y",
-                        "smooth"  = "s"), 
-           bruises = bruises %>% 
-             fct_recode("true"       = "t",
-                        "false"      = "f"), 
-           odor = odor %>%
+mushrooms <- 
+  mushrooms %>% 
+  mutate(across(where(is.character), as_factor))%>%
+  dplyr::select(-veil.type, -stalk.root)%>%     
+  mutate(cap.shape = cap.shape %>% 
+           fct_recode("bell"    = "b",
+                      "conical" = "c",
+                      "convex"  = "x",
+                      "flat"    = "f", 
+                      "knobbed" = "k",
+                      "sunken"  = "s"),
+         cap.surface = cap.surface %>% 
+            fct_recode("fibrous" = "f",
+                       "grooves" = "g",
+                       "scaly"   = "y",
+                       "smooth"  = "s"), 
+         bruises = bruises %>% 
+            fct_recode("true"       = "t",
+                       "false"      = "f"), 
+         odor = odor %>%
              fct_recode("almond"     = "a",
                         "anise"      = "l",
                         "creosote"   = "c",
@@ -79,7 +80,7 @@ mushrooms <- mushrooms %>%
                         "none"       = "n",
                         "pungent"    = "p",
                         "spicy"      = "s"),
-           cap.color = cap.color %>%                 
+          cap.color = cap.color %>%                 
              fct_recode("brown"      = "n",
                         "brown"      = "b",
                         "brown"      = "c", 
@@ -191,74 +192,31 @@ mushrooms <- mushrooms %>%
 ```{r}
 table1 <- tibble(
   Variable = c(
-    "cap shape",
-    "cap surface",
-    "cap color",
-    "bruises",
-    "odor",
-    "gill attachment",
-    "gill spacing",
-    "gill size",
-    "gill color",
-    "stalk shape",
-    "stalk root",
-    "stalk surface above ring",
-    "stalk surface below ring",
-    "stalk color above ring",
-    "stalk color below ring",
-    "veil type",
-    "veil color",
-    "ring number",
-    "ring type",
-    "spore print color",
-    "population",
-    "habitat"
-  ),
+    "cap.shape", 
+    "cap.color", 
+    "bruises", 
+    "gill.color", 
+    "stalk.shape", 
+    "ring.number", 
+    "population", 
+    "habitat"),
   `Original levels` = c(
     "bell, conical, convex, flat, knobbed, sunken",
-    "fibrous, grooves, scaly, smooth",
     "brown, buff, cinnamon, gray, green, pink, purple, red, white, yellow",
     "yes, no",
-    "almond, anise, creosote, fishy, foul, musty, none, pungent, spicy",
-    "attached, descending, free, notched",
-    "close, crowded, distant",
-    "broad, narrow",
     "black, brown, buff, chocolate, gray, green, orange, pink, purple, red, white, yellow",
     "enlarging, tapering",
-    "bulbous, club, cup, equal, rhizomorphs, rooted, missing",
-    "fibrous, scaly, silky, smooth",
-    "fibrous, scaly, silky, smooth",
-    "brown, buff, cinnamon, gray, orange, pink, red, white, yellow",
-    "brown, buff, cinnamon, gray, orange, pink, red, white, yellow",
-    "partial, universal",
-    "brown, orange, white, yellow",
     "none, one, two",
-    "cobwebby, evanescent, flaring, large, none, pendant, sheathing, zone",
-    "black, brown, buff, chocolate, green, orange, purple, white, yellow",
     "abundant, clustered, numerous, scattered, several, solitary",
     "grasses, leaves, meadows, paths, urban, waste, woods"
   ),
   `Included levels` = c(
     "bell, conical, convex, flat, knobbed, sunken",
-    "-",
     "brown (includes brown, buff, cinnamon), gray, green, pink (includes pink, purple, red), white, yellow",
     "yes, no",
-    "-",
-    "-",
-    "-",
-    "-",
     "black, brown (includes brown, buff, chocolate), gray, green, orange, pink (includes pink, purple, red), white, yellow",
     "enlarging, tapering",
-    "-",
-    "-",
-    "-",
-    "-",
-    "-",
-    "-",
-    "-",
     "none, one, two",
-    "-",
-    "-",
     "group, solitary",
     "grasses (includes grasses, meadows), woods (includes woods, leaves), urban (includes paths, urban), waste"
   )
@@ -269,9 +227,11 @@ table1 %>%
   kable_styling("striped") 
 ```
 
-## Methods
+## 2.  Methods
 
-We split the dataset into a training dataset, which will be used to fit the candidate models, and a testing dataset, which will be used to evaluate and compare the models. The training dataset contains 80% of the observations in the full dataset. All models will be evaluated using something something (metrics & justification)
+Two types of classification algorithms are considered: logistic regression and tree based methods. Logistic regression is used to obtain the most relevant predictors from the eight candidate predictors.  Subsequently, using these relevant predictors, tree based models are fit. Finally, the out-of-sample performance of the final logistic regression model and tree based models is compared.\
+\
+The data set is partitioned into a training and test set.  The training data set contains 80% of the observations in the full data set.  In this analysis, all candidate models are developed using the training data.  In the final step of our analysis, the test data set is utilized to estimate the out-of-sample performance of our models.  
 
 ```{r test and train} 
 # set seed 
@@ -279,38 +239,38 @@ set.seed(191)
 
 # test and train
 n <- nrow(mushrooms)
-mushrooms_split <- mushrooms %>% 
-                   mutate(split = sample(rep(c("train", "test"), 
-                                             times = c(round(.8*n), round(.2*n)))))
+mushrooms_split <- 
+  mushrooms %>% 
+  mutate(split = sample(rep(c("train", "test"), 
+         times = c(round(.8*n), round(.2*n)))))
 
-mushrooms_train <- mushrooms_split %>% 
-                  filter(split == "train") %>%
-                  dplyr::select(-split)
+mushrooms_train <- 
+  mushrooms_split %>% 
+  filter(split == "train") %>%
+  dplyr::select(-split)
 
-mushrooms_test  <- mushrooms_split %>% 
-                  filter(split == "test") %>%
-                  dplyr::select(-split)
+mushrooms_test  <- 
+  mushrooms_split %>% 
+  filter(split == "test") %>%
+  dplyr::select(-split)
 ```
 
 ```{r}
 # beginner 
-beginner       <- mushrooms %>% 
-                  dplyr::select(class, cap.shape, cap.color, bruises, gill.color, 
-                                stalk.shape, ring.number, population, habitat)
+beginner <- 
+  mushrooms %>% 
+  dplyr::select(class, cap.shape, cap.color, bruises, gill.color, 
+                stalk.shape, ring.number, population, habitat)
 
-beginner_train <- mushrooms_train %>% 
-                  dplyr::select(class, cap.shape, cap.color, bruises, gill.color, 
-                                stalk.shape, ring.number, population, habitat)
+beginner_train <- 
+  mushrooms_train %>% 
+  dplyr::select(class, cap.shape, cap.color, bruises, gill.color, 
+                stalk.shape, ring.number, population, habitat)
 
-beginner_test  <- mushrooms_test %>% 
-                  dplyr::select(class, cap.shape, cap.color, bruises, gill.color,
-                                stalk.shape, ring.number, population, habitat)
-                
-
-# advanced 
-advanced       <- mushrooms 
-advanced_train <- mushrooms_train
-advanced_test  <- mushrooms_test
+beginner_test  <- 
+  mushrooms_test %>% 
+  dplyr::select(class, cap.shape, cap.color, bruises, gill.color,
+                stalk.shape, ring.number, population, habitat)
 ```
 
 ```{r}
@@ -320,7 +280,7 @@ rm(data, mushrooms, mushrooms_split, mushrooms_test, mushrooms_train)
 
 ### Logistic regression
 
-As mentioned in the introduction it is the goal of this assignment to make a mushroom hunt available for everyone. This means that we need to test how many characteristics are needed to reach a satisfying level of accuracy. As we are beginners ourselve and we tried to identify some mushrooms based on the given characteristics we follow the credo of using the least amount of predictors as possible. 
+As mentioned in the introduction it is the goal of this assignment to make a mushroom hunt available for everyone. This means that we need to test how many characteristics are needed to reach a satisfying level of accuracy. As we are beginners ourselves and we tried to identify some mushrooms based on the given characteristics we follow the credo of using the least amount of predictors as possible. 
 For this reason we apply a dimension reduction technique which compares different combinations of predictors and compared on a chosen metric gives us the best set of predictors for our classification problem. 
 
 As our main metric to choose the set of predictors we use the balanced accuracy $(Sensitifity + Specificity)/2$, but adjust it a little bit to also account for our goal to mainly classify mushrooms which are actually poisonous as poisonous. That means avoiding to have a lot of false negatives (mushrooms which are actually poisonous, but are classified as edible). For this sake we are even willing to miss classify more mushrooms which are actually edible as poisonous. Therefore, our choice of evaluation metric is a weighted balanced accuracy, where we ive more weight to the sensitivity as this should decrease the false negative rate $(Sensitifity*1.5 + Specificity)/2$.
@@ -476,8 +436,8 @@ cv_best_models <- function(k, dataset, form, alpha, seed){
     FP <- cmat_lr[1, 2]
     TP <- cmat_lr[2, 2]
     
-    comb[i,1] <- TP / (TP + FN)
-    comb[i,2] <- TN / (TN + FP)
+    comb[i,1] <- TP / (TP + FN)  # sensitivity 
+    comb[i,2] <- TN / (TN + FP)  # specificity
     comb[i,3] <- (comb[i,2]*1.5+comb[i,1])/2
   }
   Final[,1]  <- mean(comb[,1])
@@ -560,9 +520,11 @@ pred5[1,1]
 
 ### Trees
 
-something something, what are we doing and why and how are we making it more complex
+Given the set of predictors selected using logistic regression, 
+
 
 ```{r}
+
 ```
 
 ## Results
