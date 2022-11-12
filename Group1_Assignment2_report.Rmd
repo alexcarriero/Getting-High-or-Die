@@ -1,7 +1,7 @@
 ---
 title: "Supervised Learning and Visualisation: Assignment 2"
 author: "Group 1: Florian van Leeuwen, Alex Carriero, Christoph Voltzke, Judith Neve"
-date: "13/11/2022"
+date: "13/11/2022 \\vspace{3in}"
 output: 
    bookdown::html_document2:
     toc: true
@@ -501,9 +501,9 @@ test_metric <- function(formula, train, test,alpha){
 
 ### 2.2 Trees
 
-Using the set of predictors selected above, we now wish to compare the performance of logistic regression with tree-based methods. Tree-based methods may be more appropriate in this case due to all predictors being categorical. We consider a simple decision tree, a random forest, and XGboost.
+Using the set of predictors selected above, we now wish to compare the performance of logistic regression with (more advanced) tree-based methods. Tree-based methods may be more appropriate in this case due to all predictors being categorical. We consider a simple decision tree, a random forest, and XGboost. 
 
-### 2.3 Performance Metrics
+### 2.3 Model Comparison and Performance Metrics
 
 ```{r}
 # numeric performance metrics 
@@ -544,7 +544,16 @@ perf.metrics <- function(model, test, best_formula, threshold = round(mean(test$
 }
 ```
 
-Performance metrics of interest were accuracy, accuracy biased in favour of specificity, discrimination, and calibration.
+We compare the predictive performance of our final four models: logistic regression, decision tree, random forest and xgboost. All models are trained using the training data set, and fit with the same set of predictors (determined using the selection procedure introduced in Section 2.1).  The test data set is then used to generate predictions under each model.\
+\
+We assess model predictive performance across three categories: accuracy, discrimination and calibration. Accuracy is assessed using both total accuracy and weighted balanced accuracy (introduced in Section 2.1).  
+
+- Accuracy: $\frac{\mathrm{TP} + \mathrm{TN}}{N}$
+- Weighted Balanced Accuracy:  $\frac{1.5*Sp \ + Sn}{2.5}$
+- Discrimination: area under the receiver operator curve (AUROC)
+- Calibration: assessed visually by means of flexible calibration curves. 
+
+In the formulae above, TP reflects the number of true positives, TN reflects the number of true negatives, N is the total number of observations in the sample, Sp represents specificity and Sn represents sensitivity. For the accuracy measures, a decision threshold must be imposed.  For all analyses we selected the decision threshold to reflect the base rate in the data, that is, 0.52. 
 
 ## 3. Results
 
@@ -571,23 +580,25 @@ pred5 <- cv_best_pred(5, beginner_train, formulas_5, 5)
 pred6 <- cv_best_pred(5, beginner_train, formulas_6, 5)
 
 # comparing the results
-rbind(pred2, pred3, pred4, pred5, pred6) %>%
-  mutate(n_pred = rep(2:6, each = 5)) %>%
-  group_by(n_pred) %>%
-  summarise(mean_performance = mean(`CV_Mean of TNR_TPR`), sd_performance = sd(`CV_Mean of TNR_TPR`)) %>%
-  mutate(lower_bound = mean_performance - sd_performance) %>% 
-  kbl(format = "html", caption = "Performance of the best sets of predictors.") %>% 
-  kable_styling("striped") 
+#rbind(pred2, pred3, pred4, pred5, pred6) %>%
+  #mutate(n_pred = rep(2:6, each = 5)) %>%
+  #group_by(n_pred) %>%
+  #summarise(mean_performance = mean(`CV_Mean of TNR_TPR`), sd_performance = sd(`CV_Mean of TNR_TPR`)) %>%
+  #mutate(lower_bound = mean_performance - 1.96 *sd_performance / sqrt(n)) %>% 
+  #kbl(format = "html", caption = "Preformance (weighted balanced accuracy) by number of predictors.") %>% 
+  #kable_styling("striped") 
 # not a huge improvement between 3, 4, and 5
 # All of these models would yield good results
 ```
 
-The lower bound in the table above refers to a lower estimation of model performance for the given number of predictors. If this lower bound is higher than the mean performance for the models with one less predictor, we estimate that the gain from adding one predictor is important. There is a definite improvement from 2 to 3 predictors and from 3 to 4 predictors, but not from 4 to 5. We therefore consider models with 4 to 6 predictors to perform equally well and perform cross-validation on the best of each model.\
+In table 3 we present winning combinations of predictors.  The combination of predictors with the highest weighted balanced accuracy across all levels of predictors is 5 predictors.  Therefore, we select the best combination of 5 predictors as our final set of predictors. 
 
 ```{r}
 # comparison between models
 res <- 
   rbind(
+    cv_best_models(5, beginner_train, pred2[1,1], pred4[1,3], 123),
+    cv_best_models(5, beginner_train, pred3[1,1], pred4[1,3], 123),
     cv_best_models(5, beginner_train, pred4[1,1], pred4[1,3], 123),
     cv_best_models(5, beginner_train, pred5[1,1], pred5[1,3], 123), # this seems to be the best model
     cv_best_models(5, beginner_train, pred6[1,1], pred6[1,3], 123)
@@ -596,43 +607,12 @@ res <-
 res %>%
   rename("Sensitivity" = CV_TPR, 
          "Specificity" = CV_TNR, 
-         "Accuracy"    = CV_Metric)%>%
-  mutate(Formula = c(pred4[1,1], pred5[1,1], pred6[1,1]), 
-         DT      = c(pred4[1,3], pred5[1,3], pred6[1,3])) %>% 
-  dplyr::select(Formula, DT, Sensitivity, Specificity, Accuracy) %>%
+         "WBAccuracy" =  CV_Metric)%>%
+  mutate(Formula = c(pred2[1,1], pred3[1,1], pred4[1,1], pred5[1,1], pred6[1,1]))%>%
+  dplyr::select(Formula, Sensitivity, Specificity, WBAccuracy) %>%
   kbl(format = "html", caption = "Performance of the best set of predictors for 4, 5, 6 predictors.") %>% 
-  kable_styling("striped") 
-```
-
-**The final model is:** class ~ cap.shape + bruises + stalk.shape + ring.number + habitat. The output of the model, as can be seen above. There are insignificant predictors in all predictors, this can mainly be explained by the small number of observations in these predictor groups. The significant predictors will be discussed.
-
-```{r, echo  = F}
-options(scipen = n)
-lr_final <- glm(pred5[1,1], family=binomial, data=beginner)
-lr_final_resuts <- summary(lr_final)
-
-stargazer(lr_final, odd.ratio = T, type = "text", single.row = TRUE)
-```
-
-The output of logistic regression is the log odds ratio, this is a metric which is hard to interpret. The odds ratio (OR) is easier to interpret and can be obtained by taking the exponent of the log odds ratio. If the odds ratio is larger (lower) than 1 then that group is associated with higher (lower) odds of the outcome.
-
-```{r}
-table3 <- tibble(
-  `Predictor/reference` = c("cap.shape / convex","cap.shape / convex","cap.shape / convex", "bruises / true",
-                            "stalk.shape / enlarging", "ring.number / one", "habitat / Urban ", "habitat / Urban "),
-  `Catogorie` = c("bell", "flat", "knobbed", "false", "tapering", " two", "grasses", "woods"),
-  `Odds Ratio` = c("3.9", "0.9", "0.4", "0.1", "2.6", " 8.5", "15.5", "6.9")
-)
-
-table3 %>%
-  kbl(format = "html", caption = "Odd ratio's of significant predictors") %>% 
-  kable_styling("striped") 
-```
-As can be seen from the table above if a mushroom has a cap-shaped flat/knobbed or there are no bruises then the mushroom is associated with lower odds of being poisonous compared to their baseline groups. For mushrooms with bell cap shapes, stalk shapes that tare tapering, two rings and live in a grass or woods habitat they are associated with higher odds of being poisonous compared to their baseline groups.
-
-```{r}
-# assessing test set predictions
-# test_metric(pred5[1,1], beginner_train, beginner_test,pred5[1,3]) 
+  kable_styling("striped")  %>% 
+  row_spec(4, bold = T, background = "aliceblue")
 ```
 
 ```{r}
@@ -663,7 +643,7 @@ rf_importance <- importance(rf)
 #   geom_col()
 ```
 
-```{r, echo = F}
+```{r, echo = F, results = 'hide'}
 # XG Boost 
 train_x <- model.matrix(best_formula, beginner_train)[,-1]
 train_y <- beginner_train$class
@@ -676,9 +656,7 @@ xgb <- xgboost(
   nrounds = 4,
   objective = "binary:logistic",
   verbose = 2)
-# TODO: need to make sure nothing prints from this chunk
 ```
-
 
 ### 3.2 Performance of models
 
@@ -696,17 +674,6 @@ test.class <- test$class
 
 ```{r}
 rbind(
-  perf.metrics(lr,  test, best_formula, threshold = 0.48, model.name = "Logistic Regression", lr = TRUE),
-  perf.metrics(dt,  test, best_formula, threshold = 0.48, model.name = "Decision Tree"),
-  perf.metrics(rf,  test, best_formula, threshold = 0.48, model.name = "Random Forest"),
-  perf.metrics(xgb, test, best_formula, threshold = 0.48, model.name = "XGBoost", xgboost = TRUE)
-) %>% 
-  kbl(format = "html", caption = "Performance of each model on the test set.") %>% 
-  kable_styling("striped") 
-```
-
-```{r}
-rbind(
   perf.metrics(lr,  test, best_formula, threshold = 0.52, model.name = "Logistic Regression", lr = TRUE),
   perf.metrics(dt,  test, best_formula, threshold = 0.52, model.name = "Decision Tree"),
   perf.metrics(rf,  test, best_formula, threshold = 0.52, model.name = "Random Forest"),
@@ -715,12 +682,6 @@ rbind(
   kbl(format = "html", caption = "Performance of each model on the test set.") %>% 
   kable_styling("striped") 
 ```
-
-```{r}
-table(beginner_train$class)
-3361 /(3138 +3361 )
-```
-
 
 The table above shows the performance of all types of models for the best set of predictors. It appears XGBoost was the best model on all metrics of interest.
 
@@ -763,6 +724,34 @@ Additionally, we considered calibration. It appears logistic regression and rand
 # library(CalibrationCurves)
 # val.prob.ci.2(probs$lr, probs$class) 
 ```
+
+### 3.3 Interpretations
+
+A benefit of performing logistic regression is that parameter estimates are interpretable  **The fiinal logistic model is:** class ~ cap.shape + bruises + stalk.shape + ring.number + habitat. The output of the model, can be seen below. There are insignificant predictors in all predictors, this can mainly be explained by the small number of observations in these predictor groups. The significant predictors will be discussed.
+
+```{r, echo  = F}
+options(scipen = n)
+lr_final <- glm(pred5[1,1], family=binomial, data=beginner)
+lr_final_resuts <- summary(lr_final)
+
+stargazer(lr_final, odd.ratio = T, type = "text", single.row = TRUE)
+```
+
+The output of logistic regression is the log odds ratio, this is a metric which is hard to interpret. The odds ratio (OR) is easier to interpret and can be obtained by taking the exponent of the log odds ratio. If the odds ratio is larger (lower) than 1 then that group is associated with higher (lower) odds of the outcome.
+
+```{r}
+table3 <- tibble(
+  `Predictor/reference` = c("cap.shape / convex","cap.shape / convex","cap.shape / convex", "bruises / true",
+                            "stalk.shape / enlarging", "ring.number / one", "habitat / Urban ", "habitat / Urban "),
+  `Catogorie` = c("bell", "flat", "knobbed", "false", "tapering", " two", "grasses", "woods"),
+  `Odds Ratio` = c("3.9", "0.9", "0.4", "0.1", "2.6", " 8.5", "15.5", "6.9")
+)
+
+table3 %>%
+  kbl(format = "html", caption = "Odd ratio's of significant predictors") %>% 
+  kable_styling("striped") 
+```
+As can be seen from the table above if a mushroom has a cap-shaped flat/knobbed or there are no bruises then the mushroom is associated with lower odds of being poisonous compared to their baseline groups. For mushrooms with bell cap shapes, stalk shapes that tare tapering, two rings and live in a grass or woods habitat they are associated with higher odds of being poisonous compared to their baseline groups.
 
 ## 4. Discussion
 
