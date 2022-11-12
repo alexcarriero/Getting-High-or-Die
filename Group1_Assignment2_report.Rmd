@@ -746,7 +746,7 @@ table3 %>%
   kable_styling("striped") 
 ```
 As can be seen from the table above if a mushroom has a cap-shaped flat/knobbed or there are no bruises then the mushroom is associated with lower odds of being poisonous compared to their baseline groups. For mushrooms with bell cap shapes, stalk shapes that tare tapering, two rings and live in a grass or woods habitat they are associated with higher odds of being poisonous compared to their baseline groups.\
-\
+
 ### 3.3.2 Decision Tree
 ```{r}
 rpart.plot(dt)
@@ -773,4 +773,4 @@ tibble(
 
 We aimed to identify a model predicting mushroom edibility. We performed logistic regression to identify the best set of predictors, then compared the performance of logistic regression with tree-based methods. It appeared that XGBoost performed the best on the metrics of interest; additionally, it slightly underestimated the probability of a mushroom being edible, while other models were severely miscalibrated. We thus conclude that XGBoost is the best model.\
 
-*something something about the others having interpretability but xgboost has best performance* 
+**something something about the others having interpretability but xgboost has best performance**
