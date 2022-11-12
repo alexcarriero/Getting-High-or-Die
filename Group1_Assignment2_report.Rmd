@@ -71,7 +71,7 @@ library(DiagrammeR)
 ```
 
 
-## 1. Introduction
+# 1. Introduction
 
 The focus of this project is to develop a model which can accurately classify mushrooms as edible or poisonous using an [open dataset from Kaggle](https://www.kaggle.com/datasets/uciml/mushroom-classification). The end goal is to develop an app for mushroom foragers of all levels, that, using our model, will reliably classify a mushroom as edible or poisonous, given a set of input criteria. In this project, we consider a variety of classification algorithms, compare their performance and ultimately, select a final model to be used in the app. For all models, we predict whether a mushroom is edible, that is, all models predict the probability that a given mushroom is edible.  \
 \
@@ -260,7 +260,7 @@ table1 %>%
   kable_styling("striped") 
 ```
 
-## 2.  Methods
+# 2.  Methods
 
 Two types of classification algorithms are considered: logistic regression and tree based methods. Logistic regression is used to obtain the most relevant predictors from the eight candidate predictors. Subsequently, using these relevant predictors, tree based models are fit. Finally, the out-of-sample performance of the final logistic regression model and tree based models is compared.\
 \
@@ -555,9 +555,9 @@ We assess model predictive performance across three categories: accuracy, discri
 
 In the formulae above, TP reflects the number of true positives, TN reflects the number of true negatives, N is the total number of observations in the sample, Sp represents specificity and Sn represents sensitivity. For the accuracy measures, a decision threshold must be imposed.  For all analyses we selected the decision threshold to reflect the base rate in the data, that is, 0.52. 
 
-## 3. Results
+# 3. Results
 
-### 3.1 Variable selection using logistic regression
+## 3.1 Variable selection using logistic regression
 
 ```{r}
 # Applying the formulas:
@@ -626,21 +626,12 @@ dt <- rpart(
   best_formula,
   data = beginner_train
   )
-# rpart.plot(dt)
 ```
 
 ```{r}
 # Random Forest
 rf <- randomForest(best_formula, beginner_train)
 rf_importance <- importance(rf)
-
-# ggplot(
-#   mapping = aes(
-#     x = rownames(rf_importance),
-#     y = c(rf_importance)
-#     )
-#   ) +
-#   geom_col()
 ```
 
 ```{r, echo = F, results = 'hide'}
@@ -658,7 +649,7 @@ xgb <- xgboost(
   verbose = 2)
 ```
 
-### 3.2 Performance of models
+## 3.2 Performance of models
 
 ```{r}
 lr <- glm(best_formula, family = "binomial", data = beginner_train)
@@ -679,8 +670,10 @@ rbind(
   perf.metrics(rf,  test, best_formula, threshold = 0.52, model.name = "Random Forest"),
   perf.metrics(xgb, test, best_formula, threshold = 0.52, model.name = "XGBoost", xgboost = TRUE)
 ) %>% 
-  kbl(format = "html", caption = "Performance of each model on the test set.") %>% 
-  kable_styling("striped") 
+  kbl(format = "html", caption = "Performance of each model on the test set.", 
+      col.names = c("Model", "Accuracy", "WBAccuracy", "AUROC")) %>% 
+  kable_styling("striped") %>%
+  row_spec(4, bold = T, background = "aliceblue")
 ```
 
 The table above shows the performance of all types of models for the best set of predictors. It appears XGBoost was the best model on all metrics of interest.
@@ -707,7 +700,6 @@ probs %>%
   geom_smooth(method = stats::loess, se = TRUE) +
   scale_x_continuous(breaks = seq(0, 1, 0.1)) +
   scale_y_continuous(breaks = seq(0, 1, 0.1)) +
-  # scale_color_discrete(labels=c('Decision Tree', 'Logistic Regression', 'Random Forest', 'XGBoost'))+
   scale_fill_brewer(palette = "Set2") +
   scale_color_brewer(palette = "Set2") +
   xlab("Estimated Probability") +
@@ -725,9 +717,11 @@ Additionally, we considered calibration. It appears logistic regression and rand
 # val.prob.ci.2(probs$lr, probs$class) 
 ```
 
-### 3.3 Interpretations
+## 3.3 Interpretations
 
-A benefit of performing logistic regression is that parameter estimates are interpretable  **The fiinal logistic model is:** class ~ cap.shape + bruises + stalk.shape + ring.number + habitat. The output of the model, can be seen below. There are insignificant predictors in all predictors, this can mainly be explained by the small number of observations in these predictor groups. The significant predictors will be discussed.
+### 3.3.1 Logistic Regression 
+
+A benefit of performing logistic regression is that parameter estimates are interpretable  **The final logistic model is:** class ~ cap.shape + bruises + stalk.shape + ring.number + habitat. The output of the model, can be seen below. There are insignificant predictors in all predictors, this can mainly be explained by the small number of observations in these predictor groups. The significant predictors will be discussed.
 
 ```{r, echo  = F}
 options(scipen = n)
@@ -751,8 +745,32 @@ table3 %>%
   kbl(format = "html", caption = "Odd ratio's of significant predictors") %>% 
   kable_styling("striped") 
 ```
-As can be seen from the table above if a mushroom has a cap-shaped flat/knobbed or there are no bruises then the mushroom is associated with lower odds of being poisonous compared to their baseline groups. For mushrooms with bell cap shapes, stalk shapes that tare tapering, two rings and live in a grass or woods habitat they are associated with higher odds of being poisonous compared to their baseline groups.
+As can be seen from the table above if a mushroom has a cap-shaped flat/knobbed or there are no bruises then the mushroom is associated with lower odds of being poisonous compared to their baseline groups. For mushrooms with bell cap shapes, stalk shapes that tare tapering, two rings and live in a grass or woods habitat they are associated with higher odds of being poisonous compared to their baseline groups.\
+\
+### 3.3.2 Decision Tree
+```{r}
+rpart.plot(dt)
+```
 
-## 4. Discussion
+### 3.3.3 Random Forest
+```{r}
+tibble(
+  var = rownames(rf_importance),
+  imp = rf_importance
+)%>%
+  ggplot(aes(x = var, y = rf_importance)) +
+  geom_bar(stat = "identity", width = 0.05, fill = "skyblue")+
+  geom_point( col = "lightsalmon2", size = 3) + 
+  coord_flip() + 
+  xlab("Importance") +
+  ylab("Predictor") +
+  ggtitle("Importance of predictors from random forest model") + 
+  theme_minimal()
+```
 
-We aimed to identify a model predicting mushroom edibility. We performed logistic regression to identify the best set of predictors, then compared the performance of logistic regression with tree-based methods. It appeared that XGBoost performed the best on the metrics of interest; additionally, it slightly underestimated the probability of a mushroom being edible, while other models were severely miscalibrated. We thus conclude that XGBoost is the best model.
+
+# 4. Discussion
+
+We aimed to identify a model predicting mushroom edibility. We performed logistic regression to identify the best set of predictors, then compared the performance of logistic regression with tree-based methods. It appeared that XGBoost performed the best on the metrics of interest; additionally, it slightly underestimated the probability of a mushroom being edible, while other models were severely miscalibrated. We thus conclude that XGBoost is the best model.\
+
+*something something about the others having interpretability but xgboost has best performance* 
