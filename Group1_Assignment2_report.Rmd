@@ -317,7 +317,7 @@ rm(mushrooms, mushrooms_split, mushrooms_test, mushrooms_train)
 As mentioned in the introduction it is the goal of this assignment to make mushroom foraging available for everyone. This means that we need to test how many characteristics are needed to reach a satisfying level of accuracy, while avoiding overfitting. As we are beginners ourselves and we tried to identify some mushrooms based on the given characteristics we follow the credo of using the least amount of predictors as possible. 
 For this reason we apply a variable selection technique which compares different combinations of predictors on a chosen metric gives us the best set of predictors for our classification problem. 
 
-As our main metric to choose the set of predictors we use the balanced accuracy $\frac{\text{Sensitivity} + \text{Specificity)}}{2}$, but adjust it a little bit to put more emphasis on avoiding false positives (that is, to avoid classifying a mushroom as edible when it is poisonous). This is due to the real-life risk of misclassification: eating a poisonous mushroom causes more harm than not eating an edible mushroom. For this sake, we are willing to misclassify more edible mushrooms as poisonous than vice-versa. Therefore, our choice of evaluation metric is a weighted balanced accuracy, where we give more weight to specificity as this should decrease the false negative rate $\frac{\text{Sensitivity} + 1.5*\text{Specificity)}}{2.5}$.
+As our main metric to choose the set of predictors we use the balanced accuracy $$\frac{\text{Sensitivity} + \text{Specificity}}{2}$$, but adjust it a little bit to put more emphasis on avoiding false positives (that is, to avoid classifying a mushroom as edible when it is poisonous). This is due to the real-life risk of misclassification: eating a poisonous mushroom causes more harm than not eating an edible mushroom. For this sake, we are willing to misclassify more edible mushrooms as poisonous than vice-versa. Therefore, our choice of evaluation metric is a weighted balanced accuracy, where we give more weight to specificity as this should decrease the false negative rate: $$\frac{\text{Sensitivity} + 1.5*\text{Specificity}}{2.5}$$.
 
 For this selection of predictors we also wanted to test different thresholds for classifying a probability based on the given model as edible or poisonous. Therefore, we applied different thresholds and choose for each set of predictors the threshold were our chosen metric has its maximum value. 
 
@@ -370,47 +370,30 @@ generate_formulas <- function(p, x_vars, y_var) {
 find_best_predictors <- function(formulas, train, valid, valid_y){
   
   out <- data.frame(matrix(nrow = length(formulas), ncol = 3))
-  thres <- data.frame(seq(0.05,0.95,length.out=19))
-  alpha <- seq(0.05,0.95,length.out=19)
+  thres <- round(mean(train$class), 2)
 
   for(i in 1:length(formulas)){
     model <- glm(formulas[i], family=binomial, data=train)
     pred_prob <- predict(model, type = "response", newdata = valid)
     
-    comb <- data.frame(matrix(nrow = nrow(thres), ncol = 3))
-    comb$alpha <- alpha
-    colnames(comb) <- c("TPR", "TNR","mean","alpha")
+    comb <- data.frame(matrix(1, ncol = 3))
+    colnames(comb) <- c("TPR", "TNR","mean")
       
-    for(j in 1:nrow(thres)){
-      pred_lr <- c()
-      pred_lr <- case_when(pred_prob > as.numeric(thres[j,1]) ~ 1, pred_prob <= as.numeric(thres[j,1]) ~ 0)
-      cmat_lr <- table(true = valid_y, predicted = pred_lr)
-      if(sum(pred_lr == 1 ) == length(valid_y)){
-        TN <- cmat_lr[1, 1]
-        FN <- cmat_lr[2, 1]
-        FP <- 0
-        TP <- 0
-      }
-      else if(sum(pred_lr == 0 ) == length(valid_y)){
-        TN <- 0
-        FN <- 0
-        FP <- cmat_lr[1, 1]
-        TP <- cmat_lr[2, 1]
-      }      else{
-        TN <- cmat_lr[1, 1]
-        FN <- cmat_lr[2, 1]
-        FP <- cmat_lr[1, 2]
-        TP <- cmat_lr[2, 2]
-      }
-      comb[j,1] <- TP / (TP + FN)  # sensitivity 
-      comb[j,2] <- TN / (TN + FP)  # specificity
-      comb[j,3] <- (comb[j,1]+comb[j,2]*1.5)/2.5
-      }
-    comb <- comb[order(comb$mean, decreasing=T),]
+    pred_lr <- c()
+    pred_lr <- case_when(pred_prob > thres ~ 1, pred_prob <= thres ~ 0)
+    cmat_lr <- table(true = valid_y, predicted = pred_lr)
+    TN <- cmat_lr[1, 1]
+    FN <- cmat_lr[2, 1]
+    FP <- cmat_lr[1, 2]
+    TP <- cmat_lr[2, 2]
+    
+    comb[1,1] <- TP / (TP + FN)  # sensitivity 
+    comb[1,2] <- TN / (TN + FP)  # specificity
+    comb[1,3] <- (comb[1,1]+comb[1,2]*1.5)/2.5
     
     out[i,1] <- comb[1,3]
     out[i,2] <- formulas[i]
-    out[i,3] <- comb[1,4]
+    out[i,3] <- thres
     
     }
   colnames(out) <- c("meanTPR_TNR", "formula","alpha")
@@ -524,7 +507,7 @@ Using the set of predictors selected above, we now wish to compare the performan
 
 ```{r}
 # numeric performance metrics 
-perf.metrics <- function(model, test, best_formula, threshold = 0.5, model.name = NA, lr = FALSE, xgboost = FALSE) {
+perf.metrics <- function(model, test, best_formula, threshold = round(mean(test$class)), model.name = NA, lr = FALSE, xgboost = FALSE) {
   test.class = test$class
   
   if (xgboost) {
