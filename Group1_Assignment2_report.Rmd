@@ -67,6 +67,7 @@ library(ISLR)
 library(Matrix)
 library(kableExtra)
 library(stargazer)
+library(DiagrammeR)
 ```
 
 
@@ -328,6 +329,23 @@ For these comparisons we took the accuracy and our chosen metric into account.
 
 We believe that we identified the best set of predictors based on the training data and that in this way we are also able to make a decision on how many predictors are actually necessary to get a satisfying performance. 
 
+```{r}
+grViz(diagram = "digraph flowchart {
+  node [fontname = arial, shape = oval,color = Lavender, style = filled]
+  tab1 [label = '@@1']
+  tab2 [label = '@@2']
+  tab3 [label = '@@3']
+  tab4 [label = '@@4']
+  
+  tab1 -> tab2 -> tab3 -> tab4;
+}
+  
+  [1]: '5-fold cross validation'
+  [2]: 'Run a LR for all formulas'  
+  [3]: 'Obtain metrics for different thresholds'  
+  [4]: 'Take the mean of the best metrics for each formula'
+")
+```
 
 ```{r}
 # Generating all possible combination of predictors
@@ -384,8 +402,8 @@ find_best_predictors <- function(formulas, train, valid, valid_y){
         FP <- cmat_lr[1, 2]
         TP <- cmat_lr[2, 2]
       }
-      comb[j,1] <- TP / (TP + FN)
-      comb[j,2] <- 1 - (FP / (TN + FP)) # Same as TNR just to emphasize
+      comb[j,1] <- TP / (TP + FN)  # sensitivity 
+      comb[j,2] <- TN / (TN + FP)  # specificity
       comb[j,3] <- (comb[j,1]+comb[j,2]*1.5)/2.5
       }
     comb <- comb[order(comb$mean, decreasing=T),]
@@ -581,28 +599,53 @@ rbind(pred2, pred3, pred4, pred5, pred6) %>%
 # All of these models would yield good results
 ```
 
-The lower bound in the table above refers to a lower estimation of model performance for the given number of predictors. If this lower bound is higher than the mean performance for the models with one less predictor, we estimate that the gain from adding one predictor is important. There is a definite improvement from 2 to 3 predictors and from 3 to 4 predictors, but not from 4 to 5. We therefore consider models with 4 to 6 predictors to perform equally well and perform cross-validation on the best of each model.
+The lower bound in the table above refers to a lower estimation of model performance for the given number of predictors. If this lower bound is higher than the mean performance for the models with one less predictor, we estimate that the gain from adding one predictor is important. There is a definite improvement from 2 to 3 predictors and from 3 to 4 predictors, but not from 4 to 5. We therefore consider models with 4 to 6 predictors to perform equally well and perform cross-validation on the best of each model.\
 
 ```{r}
 # comparison between models
-rbind(
-  cv_best_models(5, beginner_train, pred4[1,1], pred4[1,3], 123),
-  cv_best_models(5, beginner_train, pred5[1,1], pred5[1,3], 123), # this seems to be the best model
-  cv_best_models(5, beginner_train, pred6[1,1], pred6[1,3], 123)
-) %>% 
+res <- 
+  rbind(
+    cv_best_models(5, beginner_train, pred4[1,1], pred4[1,3], 123),
+    cv_best_models(5, beginner_train, pred5[1,1], pred5[1,3], 123), # this seems to be the best model
+    cv_best_models(5, beginner_train, pred6[1,1], pred6[1,3], 123)
+  ) 
+
+res %>%
+  rename("Sensitivity" = CV_TPR, 
+         "Specificity" = CV_TNR, 
+         "Accuracy"    = CV_Metric)%>%
+  mutate(Formula = c(pred4[1,1], pred5[1,1], pred6[1,1]), 
+         DT      = c(pred4[1,3], pred5[1,3], pred6[1,3])) %>% 
+  dplyr::select(Formula, DT, Sensitivity, Specificity, Accuracy) %>%
   kbl(format = "html", caption = "Performance of the best set of predictors for 4, 5, 6 predictors.") %>% 
   kable_styling("striped") 
 ```
 
-```{r}
+**The final model is:** class ~ cap.shape + bruises + stalk.shape + ring.number + habitat. The output of the model, as can be seen above. There are insignificant predictors in all predictors, this can mainly be explained by the small number of observations in these predictor groups. The significant predictors will be discussed.
+
+```{r, echo  = F}
 options(scipen = n)
 lr_final <- glm(pred5[1,1], family=binomial, data=beginner)
 lr_final_resuts <- summary(lr_final)
 
 stargazer(lr_final, odd.ratio = T, type = "text", single.row = TRUE)
-
-round(exp(lr_final_resuts$coefficients[,1]),1)
 ```
+
+The output of logistic regression is the log odds ratio, this is a metric which is hard to interpret. The odds ratio (OR) is easier to interpret and can be obtained by taking the exponent of the log odds ratio. If the odds ratio is larger (lower) than 1 then that group is associated with higher (lower) odds of the outcome.
+
+```{r}
+table3 <- tibble(
+  `Predictor/reference` = c("cap.shape / convex","cap.shape / convex","cap.shape / convex", "bruises / true",
+                            "stalk.shape / enlarging", "ring.number / one", "habitat / Urban ", "habitat / Urban "),
+  `Catogorie` = c("bell", "flat", "knobbed", "false", "tapering", " two", "grasses", "woods"),
+  `Odds Ratio` = c("3.9", "0.9", "0.4", "0.1", "2.6", " 8.5", "15.5", "6.9")
+)
+
+table3 %>%
+  kbl(format = "html", caption = "Odd ratio's of significant predictors") %>% 
+  kable_styling("striped") 
+```
+As can be seen from the table above if a mushroom has a cap-shaped flat/knobbed or there are no bruises then the mushroom is associated with lower odds of being poisonous compared to their baseline groups. For mushrooms with bell cap shapes, stalk shapes that tare tapering, two rings and live in a grass or woods habitat they are associated with higher odds of being poisonous compared to their baseline groups.
 
 ```{r}
 # assessing test set predictions
@@ -637,7 +680,7 @@ rf_importance <- importance(rf)
 #   geom_col()
 ```
 
-```{r}
+```{r, echo = F}
 # XG Boost 
 train_x <- model.matrix(best_formula, beginner_train)[,-1]
 train_y <- beginner_train$class
@@ -670,14 +713,31 @@ test.class <- test$class
 
 ```{r}
 rbind(
-  perf.metrics(lr,  test, best_formula, threshold = 0.5, model.name = "Logistic Regression", lr = TRUE),
-  perf.metrics(dt,  test, best_formula, threshold = 0.5, model.name = "Decision Tree"),
-  perf.metrics(rf,  test, best_formula, threshold = 0.5, model.name = "Random Forest"),
-  perf.metrics(xgb, test, best_formula, threshold = 0.5, model.name = "XGBoost", xgboost = TRUE)
+  perf.metrics(lr,  test, best_formula, threshold = 0.48, model.name = "Logistic Regression", lr = TRUE),
+  perf.metrics(dt,  test, best_formula, threshold = 0.48, model.name = "Decision Tree"),
+  perf.metrics(rf,  test, best_formula, threshold = 0.48, model.name = "Random Forest"),
+  perf.metrics(xgb, test, best_formula, threshold = 0.48, model.name = "XGBoost", xgboost = TRUE)
 ) %>% 
   kbl(format = "html", caption = "Performance of each model on the test set.") %>% 
   kable_styling("striped") 
 ```
+
+```{r}
+rbind(
+  perf.metrics(lr,  test, best_formula, threshold = 0.52, model.name = "Logistic Regression", lr = TRUE),
+  perf.metrics(dt,  test, best_formula, threshold = 0.52, model.name = "Decision Tree"),
+  perf.metrics(rf,  test, best_formula, threshold = 0.52, model.name = "Random Forest"),
+  perf.metrics(xgb, test, best_formula, threshold = 0.52, model.name = "XGBoost", xgboost = TRUE)
+) %>% 
+  kbl(format = "html", caption = "Performance of each model on the test set.") %>% 
+  kable_styling("striped") 
+```
+
+```{r}
+table(beginner_train$class)
+3361 /(3138 +3361 )
+```
+
 
 The table above shows the performance of all types of models for the best set of predictors. It appears XGBoost was the best model on all metrics of interest.
 
