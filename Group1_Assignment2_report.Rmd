@@ -1,6 +1,6 @@
 ---
 title: "Supervised Learning and Visualisation: Assignment 2"
-author: "Group 1: Florian van Leeuwen, AlexCarriero, Christoph Voltzke, Judith Neve"
+author: "Group 1: Florian van Leeuwen, Alex Carriero, Christoph Voltzke, Judith Neve"
 date: "13/11/2022"
 output: 
    bookdown::html_document2:
@@ -42,8 +42,6 @@ pre { /* Code block - determines code spacing between lines */
 
 ---
 
---- title page --- how do we do this?? there's not multiple pages on html
-
 ```{r setup, echo=FALSE}
 library(knitr)
 knitr::opts_chunk$set(
@@ -74,9 +72,7 @@ library(kableExtra)
 
 The focus of this project is to develop a model which can accurately classify mushrooms as edible or poisonous using an [open dataset from Kaggle](https://www.kaggle.com/datasets/uciml/mushroom-classification). The end goal is to develop an app for mushroom foragers of all levels, that, using our model, will reliably classify a mushroom as edible or poisonous, given a set of input criteria. In this project, we consider a variety of classification algorithms, compare their performance and ultimately, select a final model to be used in the app. For all models, we predict whether a mushroom is edible, that is, all models predict the probability that a given mushroom is edible.  \
 \
-The dataset contains 8124 observations of 22 variables (plus the class). All variables are categorical and describe various characteristics of mushrooms.  Mushroom characteristics range from easily understandable (e.g., cap colour) to senseless for people unfamiliar with mushrooms (e.g., stalk root). In order for our app to be usable by all, we reduce the number of variables in order to only include the most easily understandable variables.  Eight candidate predictors were selected and are detailed in Table 1.  Furthermore, we reduce the number of options for some of these variables by grouping certain categories together in order to limit misspecification of predictors (e.g., brown and buff will be both called brown).\
-
-* should we include a description of what each variable is (like what a mushroom cap is and gill etc.?)... could add it as a column in the table?
+The dataset contains 8124 observations of 22 variables (plus the class). All variables are categorical and describe various characteristics of mushrooms. Mushroom characteristics range from easily understandable (e.g., cap colour) to senseless for people unfamiliar with mushrooms (e.g., stalk root). In order for our app to be usable by all, we reduce the number of variables in order to only include the most easily understandable variables. Eight candidate predictors were selected and are detailed in Table 1. Furthermore, we reduce the number of options for some of these variables by grouping certain categories together in order to limit misspecification of predictors (e.g., brown and buff will both be called brown).\
 
 ```{r import data}
 # import data
@@ -263,7 +259,7 @@ table1 %>%
 
 ## 2.  Methods
 
-Two types of classification algorithms are considered: logistic regression and tree based methods. Logistic regression is used to obtain the most relevant predictors from the eight candidate predictors.  Subsequently, using these relevant predictors, tree based models are fit. Finally, the out-of-sample performance of the final logistic regression model and tree based models is compared.\
+Two types of classification algorithms are considered: logistic regression and tree based methods. Logistic regression is used to obtain the most relevant predictors from the eight candidate predictors. Subsequently, using these relevant predictors, tree based models are fit. Finally, the out-of-sample performance of the final logistic regression model and tree based models is compared.\
 \
 The data set is partitioned into a training and test set.  The training data set contains 80% of the observations in the full data set.  In this analysis, all candidate models are developed using the training data.  In the final step of our analysis, the test data set is utilized to estimate the out-of-sample performance of our models.  
 
@@ -290,7 +286,7 @@ mushrooms_test  <-
 ```
 
 ```{r}
-# beginner 
+# beginner variables only
 beginner <- 
   mushrooms %>% 
   dplyr::select(class, cap.shape, cap.color, bruises, gill.color, 
@@ -308,16 +304,17 @@ beginner_test  <-
 ```
 
 ```{r}
+# clean the environment a little
 rm(mushrooms, mushrooms_split, mushrooms_test, mushrooms_train)
 ```
 
 
 ### 2.1 Logistic regression
 
-As mentioned in the introduction it is the goal of this assignment to make a mushroom hunt available for everyone. This means that we need to test how many characteristics are needed to reach a satisfying level of accuracy. As we are beginners ourselves and we tried to identify some mushrooms based on the given characteristics we follow the credo of using the least amount of predictors as possible. 
-For this reason we apply a dimension reduction technique which compares different combinations of predictors and compared on a chosen metric gives us the best set of predictors for our classification problem. 
+As mentioned in the introduction it is the goal of this assignment to make mushroom foraging available for everyone. This means that we need to test how many characteristics are needed to reach a satisfying level of accuracy, while avoiding overfitting. As we are beginners ourselves and we tried to identify some mushrooms based on the given characteristics we follow the credo of using the least amount of predictors as possible. 
+For this reason we apply a variable selection technique which compares different combinations of predictors on a chosen metric gives us the best set of predictors for our classification problem. 
 
-As our main metric to choose the set of predictors we use the balanced accuracy $(Sensitifity + Specificity)/2$, but adjust it a little bit to also account for our goal to mainly classify mushrooms which are actually poisonous as poisonous. That means avoiding to have a lot of false negatives (mushrooms which are actually poisonous, but are classified as edible). For this sake we are even willing to miss classify more mushrooms which are actually edible as poisonous. Therefore, our choice of evaluation metric is a weighted balanced accuracy, where we ive more weight to the sensitivity as this should decrease the false negative rate $(Sensitifity*1.5 + Specificity)/2$.
+As our main metric to choose the set of predictors we use the balanced accuracy $\frac{\text{Sensitivity} + \text{Specificity)}}{2}$, but adjust it a little bit to put more emphasis on avoiding false positives (that is, to avoid classifying a mushroom as edible when it is poisonous). This is due to the real-life risk of misclassification: eating a poisonous mushroom causes more harm than not eating an edible mushroom. For this sake, we are willing to misclassify more edible mushrooms as poisonous than vice-versa. Therefore, our choice of evaluation metric is a weighted balanced accuracy, where we give more weight to specificity as this should decrease the false negative rate $\frac{\text{Sensitivity} + 1.5*\text{Specificity)}}{2.5}$.
 
 For this selection of predictors we also wanted to test different thresholds for classifying a probability based on the given model as edible or poisonous. Therefore, we applied different thresholds and choose for each set of predictors the threshold were our chosen metric has its maximum value. 
 
@@ -325,7 +322,7 @@ In order to not rely on chance in our selection we applied 5-fold cross-validati
 
 Next we applied cross-validation again to compare the performance first on the training set between the different candidate models and also evaluated the performance on the test set. 
 
-For these comparisons we mainly took the sensitivity, accuracy and our chosen metric into account.
+For these comparisons we took the accuracy and our chosen metric into account.
 
 We believe that we identified the best set of predictors based on the training data and that in this way we are also able to make a decision on how many predictors are actually necessary to get a satisfying performance. 
 
@@ -350,9 +347,9 @@ generate_formulas <- function(p, x_vars, y_var) {
 ```{r}
 # Function to find best predictors and best alpha based on chosen metric (Balance from sens and spec with more weight for sens)
 # this formula should not be used for itself, but just in combination with the cross validation formula for finding the best predictors
-find_best_predictors <- function(formulas,train,valid, valid_y){
+find_best_predictors <- function(formulas, train, valid, valid_y){
   
-  out <-data.frame(matrix(nrow = length(formulas), ncol = 3))
+  out <- data.frame(matrix(nrow = length(formulas), ncol = 3))
   thres <- data.frame(seq(0.05,0.95,length.out=19))
   alpha <- seq(0.05,0.95,length.out=19)
 
@@ -386,8 +383,8 @@ find_best_predictors <- function(formulas,train,valid, valid_y){
         TP <- cmat_lr[2, 2]
       }
       comb[j,1] <- TP / (TP + FN)
-      comb[j,2] <- 1- (FP / (TN + FP)) # Same as TNR just to emphasize
-      comb[j,3] <- (comb[j,1]+comb[j,2]*1.5)/2
+      comb[j,2] <- 1 - (FP / (TN + FP)) # Same as TNR just to emphasize
+      comb[j,3] <- (comb[j,1]+comb[j,2]*1.5)/2.5
       }
     comb <- comb[order(comb$mean, decreasing=T),]
     
@@ -422,7 +419,7 @@ cv_best_pred <- function(k, dataset, form, top){
     
     data_valid_y <- data_valid$class
     
-    X <- find_best_predictors(formulas=form,train=data_train,valid=data_valid,valid_y=data_valid_y)
+    X <- find_best_predictors(formulas = form, train = data_train, valid = data_valid, valid_y = data_valid_y)
     Y[,i] <- X$meanTPR_TNR
     Z[,i] <- X$alpha
   }
@@ -472,7 +469,7 @@ cv_best_models <- function(k, dataset, form, alpha, seed){
     
     comb[i,1] <- TP / (TP + FN)  # sensitivity 
     comb[i,2] <- TN / (TN + FP)  # specificity
-    comb[i,3] <- (comb[i,2]*1.5+comb[i,1])/2
+    comb[i,3] <- (comb[i,2]*1.5+comb[i,1])/2.5
   }
   Final[,1]  <- mean(comb[,1])
   Final[,2] <- mean(comb[,2])
@@ -494,10 +491,61 @@ test_metric <- function(formula, train, test,alpha){
   confm <- table(true = test$class, predicted = pred_lr)
   Spec <- confm[2, 2] / (confm[2, 2] + confm[2, 1])
   Sens <- confm[1, 1] / (confm[1, 1] + confm[1, 2])
-  Metric <- (Sens*1.5+Spec)/2
-  return(list(matrix=confm, Specificty=Spec, Sensitivity=Sens, Metric=Metric))
+  Metric <- (Sens+Spec*1.5)/2.5
+  return(list(matrix = confm, Specificity = Spec, Sensitivity = Sens, Metric = Metric))
 }
 ```
+
+### 2.2 Trees
+
+Using the set of predictors selected above, we now wish to compare the performance of logistic regression with tree-based methods. Tree-based methods may be more appropriate in this case due to all predictors being categorical. We consider a simple decision tree, a random forest, and XGboost.
+
+### 2.3 Performance Metrics
+
+```{r}
+# numeric performance metrics 
+perf.metrics <- function(model, test, best_formula, threshold = 0.5, model.name = NA, lr = FALSE, xgboost = FALSE) {
+  test.class = test$class
+  
+  if (xgboost) {
+    test = model.matrix(best_formula, test)[,-1]
+    pred_prob <- predict(model, type = "prob", newdata = test)
+    pred_class <- ifelse(pred_prob < threshold, 0, 1)
+  }
+  if (lr){
+    pred_prob  = predict(model, newdata = test, type = "response")
+    pred_class = ifelse(pred_prob < threshold, 0, 1)
+  }
+  else {
+    pred_prob  = predict(model, newdata = test)
+    pred_class = ifelse(pred_prob < threshold, 0, 1)
+  }
+  confusion.table <- table(
+    true      = test.class,
+    predicted = pred_class
+    )
+  # print(confusion.table)
+  
+  TN <- confusion.table[1,1]
+  TP <- confusion.table[2,2]
+  FP <- confusion.table[1,2]
+  FN <- confusion.table[2,1]
+  
+  accuracy <- (TN + TP) / sum(confusion.table)
+  sensitivity <- TP / (TP + FN)
+  specificity <- TN / (TN + FP)
+  balanced <- (sensitivity+1.5*specificity)/2.5
+  AUC <- auc(test.class, pred_prob)
+  
+  data.frame(model.name, accuracy, balanced, AUC)
+}
+```
+
+Performance metrics of interest were accuracy, accuracy biased in favour of specificity, discrimination, and calibration.
+
+## 3. Results
+
+### 3.1 Variable selection using logistic regression
 
 ```{r}
 # Applying the formulas:
@@ -519,37 +567,36 @@ pred4 <- cv_best_pred(5, beginner_train, formulas_4, 5)
 pred5 <- cv_best_pred(5, beginner_train, formulas_5, 5)
 pred6 <- cv_best_pred(5, beginner_train, formulas_6, 5)
 
-# comparing the results 
-pred2
-pred3
-pred4
-pred5
-pred6
+# comparing the results
+rbind(pred2, pred3, pred4, pred5, pred6) %>%
+  mutate(n_pred = rep(2:6, each = 5)) %>%
+  group_by(n_pred) %>%
+  summarise(mean_performance = mean(`CV_Mean of TNR_TPR`), sd_performance = sd(`CV_Mean of TNR_TPR`)) %>%
+  mutate(lower_bound = mean_performance - sd_performance) %>% 
+  kbl(format = "html", caption = "Performance of the best sets of predictors.") %>% 
+  kable_styling("striped") 
 # not a huge improvement between 3, 4, and 5
 # All of these models would yield good results
 ```
 
+The lower bound in the table above refers to a lower estimation of model performance for the given number of predictors. If this lower bound is higher than the mean performance for the models with one less predictor, we estimate that the gain from adding one predictor is important. There is a definite improvement from 2 to 3 predictors and from 3 to 4 predictors, but not from 4 to 5. We therefore consider models with 4 to 6 predictors to perform equally well and perform cross-validation on the best of each model.
+
 ```{r}
 # comparison between models
-cv_best_models(5, beginner_train, pred4[1,1], pred4[1,3], 123)
-cv_best_models(5, beginner_train, pred5[1,1], pred5[1,3], 123) # this seems to be the best model
-cv_best_models(5, beginner_train, pred6[1,1], pred6[1,3], 123)
+rbind(
+  cv_best_models(5, beginner_train, pred4[1,1], pred4[1,3], 123),
+  cv_best_models(5, beginner_train, pred5[1,1], pred5[1,3], 123), # this seems to be the best model
+  cv_best_models(5, beginner_train, pred6[1,1], pred6[1,3], 123)
+) %>% 
+  kbl(format = "html", caption = "Performance of the best set of predictors for 4, 5, 6 predictors.") %>% 
+  kable_styling("striped") 
 ```
 
 
 ```{r}
 # assessing test set predictions
-test_metric(pred5[1,1], beginner_train, beginner_test,pred5[1,3]) 
+# test_metric(pred5[1,1], beginner_train, beginner_test,pred5[1,3]) 
 ```
-
-```{r}
-# Final formula for the trees
-pred5[1,1]
-```
-
-### 2.2 Trees
-
-Given the set of predictors selected using logistic regression, 
 
 ```{r}
 # save best formula from logistic regression 
@@ -570,13 +617,13 @@ dt <- rpart(
 rf <- randomForest(best_formula, beginner_train)
 rf_importance <- importance(rf)
 
-ggplot(
-  mapping = aes(
-    x = rownames(rf_importance),
-    y = c(rf_importance)
-    )
-  ) +
-  geom_col()
+# ggplot(
+#   mapping = aes(
+#     x = rownames(rf_importance),
+#     y = c(rf_importance)
+#     )
+#   ) +
+#   geom_col()
 ```
 
 ```{r}
@@ -592,55 +639,14 @@ xgb <- xgboost(
   nrounds = 4,
   objective = "binary:logistic",
   verbose = 2)
+# TODO: need to make sure nothing prints from this chunk
 ```
 
-### 2.3 Performance Metrics 
+
+### 3.2 Performance of models
 
 ```{r}
 lr <- glm(best_formula, family = "binomial", data = beginner_train)
-```
-
-```{r}
-# numeric performance metrics 
-perf.metrics <- function(model, test, best_formula, threshold = 0.5, model.name = NA, lr = FALSE, xgboost = FALSE) {
-  test.class = test$class
-  
-  if (xgboost) {
-    test = model.matrix(best_formula, test)[,-1]
-    pred_prob <- predict(model, type = "prob", newdata = test)
-    pred_class <- ifelse(pred_prob < threshold, 0, 1)
-  }
-  if (lr){
-    pred_prob  = predict(model, newdata = test, type = "response")
-    pred_class = ifelse(pred_prob < threshold, 0, 1)
-  }
-  else{
-    pred_prob  = predict(model, newdata = test)
-    pred_class = ifelse(pred_prob < threshold, 0, 1)
-  }
-  confusion.table <- table(
-    true      = test.class,
-    predicted = pred_class
-    )
-  print(confusion.table)
-  
-  TN <- confusion.table[1,1]
-  TP <- confusion.table[2,2]
-  FP <- confusion.table[1,2]
-  FN <- confusion.table[2,1]
-  
-  accuracy <- (TN + TP) / sum(confusion.table)
-  sensitivity <- TP / (TP + FN)
-  specificity <- TN / (TN + FP)
-  FPR <- FP / (FP + TN)
-  PPV <- TP / (TP + FP)
-  NPV <- TN / (TN + FN)
-  # ADD CHRISTOPHS+FLORIANS METRIC 
-  # TAKE AWAY METRICS WE DONT CARE ABOUT 
-  AUC <- auc(test.class, pred_prob)
-  
-  data.frame(model.name, accuracy, sensitivity, specificity, FPR, PPV, NPV, AUC)
-}
 ```
 
 ```{r}
@@ -648,15 +654,22 @@ perf.metrics <- function(model, test, best_formula, threshold = 0.5, model.name 
 test <- 
   beginner_test %>% 
   dplyr::select(class, cap.shape,  bruises, stalk.shape, ring.number,  habitat)
-test.class = test$class
+test.class <- test$class
 ```
 
 ```{r}
-perf.metrics(lr,  test, best_formula, threshold = 0.5, model.name = "Logistic Regression", lr = TRUE)
-perf.metrics(dt,  test, best_formula, threshold = 0.5, model.name = "Decision Tree")
-perf.metrics(rf,  test, best_formula, threshold = 0.5, model.name = "Random Forest")
-perf.metrics(xgb, test, best_formula, threshold = 0.5, model.name = "XGBoost", xgboost = TRUE)
+rbind(
+  perf.metrics(lr,  test, best_formula, threshold = 0.5, model.name = "Logistic Regression", lr = TRUE),
+  perf.metrics(dt,  test, best_formula, threshold = 0.5, model.name = "Decision Tree"),
+  perf.metrics(rf,  test, best_formula, threshold = 0.5, model.name = "Random Forest"),
+  perf.metrics(xgb, test, best_formula, threshold = 0.5, model.name = "XGBoost", xgboost = TRUE)
+) %>% 
+  kbl(format = "html", caption = "Performance of each model on the test set.") %>% 
+  kable_styling("striped") 
 ```
+
+The table above shows the performance of all types of models for the best set of predictors. It appears XGBoost was the best model on all metrics of interest.
+
 ```{r}
 # calibration plots 
 lr_prob <- predict(lr,  newdata = beginner_test, type = "response")
@@ -679,30 +692,24 @@ probs %>%
   geom_smooth(method = stats::loess, se = TRUE) +
   scale_x_continuous(breaks = seq(0, 1, 0.1)) +
   scale_y_continuous(breaks = seq(0, 1, 0.1)) +
-  scale_color_discrete(labels=c('Decision Tree', 'Logistic Regression', 'Random Forest', 'XGBoost'))+
-  scale_fill_brewer( palette = "Set2") +
+  # scale_color_discrete(labels=c('Decision Tree', 'Logistic Regression', 'Random Forest', 'XGBoost'))+
+  scale_fill_brewer(palette = "Set2") +
   scale_color_brewer(palette = "Set2") +
   xlab("Estimated Probability") +
   ylab("Observed Proportion") +
+  labs(color = "Model", fill = "Model") +
   ggtitle("Flexible Model Calibration") + 
   theme_minimal()
 ```
 
+Additionally, we considered calibration. It appears logistic regression and random forest were severely miscalibrated, while decision trees and XGboost tended to underestimate the probability of edibility. Underestimating edibility is more desirable than overestimating it, so we do not consider the slight underestimation of XGBoost to be a problem.
+
 ```{r}
 # check with package output 
-library(CalibrationCurves)
-val.prob.ci.2(probs$lr, probs$class) 
+# library(CalibrationCurves)
+# val.prob.ci.2(probs$lr, probs$class) 
 ```
-
-## 3. Results
-
-something something about the performance of each model
-
-compare the logistic regressions with each other
-compare the trees with each other
-
-do we need to do any advanced model (no these are good)
 
 ## 4. Discussion
 
-pros and cons of regression and trees, which one we want to use
+We aimed to identify a model predicting mushroom edibility. We performed logistic regression to identify the best set of predictors, then compared the performance of logistic regression with tree-based methods. It appeared that XGBoost performed the best on the metrics of interest; additionally, it slightly underestimated the probability of a mushroom being edible, while other models were severely miscalibrated. We thus conclude that XGBoost is the best model.
