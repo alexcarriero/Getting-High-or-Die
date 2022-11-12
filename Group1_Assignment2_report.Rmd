@@ -518,7 +518,7 @@ test_metric <- function(formula, train, test,alpha){
 
 ### 2.2 Trees
 
-Using the set of predictors selected above, we now wish to compare the performance of logistic regression with tree-based methods. Tree-based methods may be more appropriate in this case due to all predictors being categorical. We consider a simple decision tree, a random forest, and XGboost.
+Using the set of predictors selected above, we now wish to compare the performance of logistic regression with (more advanced) tree-based methods. Tree-based methods may be more appropriate in this case due to all predictors being categorical. We consider a simple decision tree, a random forest, and XGboost.
 
 ### 2.3 Performance Metrics
 
@@ -561,7 +561,12 @@ perf.metrics <- function(model, test, best_formula, threshold = 0.5, model.name 
 }
 ```
 
-Performance metrics of interest were accuracy, accuracy biased in favour of specificity, discrimination, and calibration.
+We assess model performance across three categories: accuracy, discrimination and calibration. Accuracy is assessed using total accuracy and weighted balanced accuracy (Introduced in Section 2.1).  
+
+- Accuracy: $\frac{\mathrm{TP} + \mathrm{TN}}{N}$
+- Weighted Balanced Accuracy:  $\frac{1.5*Sp + Sn}{2.5}$
+
+In these formulae, TP reflects the number of true positives, TN reflects the number of true negatives, N is the total number of observations in the sample, Sn represents sensitivity and Sp represents specificty.  Discrimination is assessed via area under the receiver operator curve (AUROC).  Finally, we assess calibration visually by means of flexible calibration curves. 
 
 ## 3. Results
 

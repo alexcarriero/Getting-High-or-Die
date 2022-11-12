@@ -3105,11 +3105,16 @@ For this reason we apply a variable selection technique which compares different
 </div>
 <div id="trees" class="section level3">
 <h3>2.2 Trees</h3>
-<p>Using the set of predictors selected above, we now wish to compare the performance of logistic regression with tree-based methods. Tree-based methods may be more appropriate in this case due to all predictors being categorical. We consider a simple decision tree, a random forest, and XGboost.</p>
+<p>Using the set of predictors selected above, we now wish to compare the performance of logistic regression with (more advanced) tree-based methods. Tree-based methods may be more appropriate in this case due to all predictors being categorical. We consider a simple decision tree, a random forest, and XGboost.</p>
 </div>
 <div id="performance-metrics" class="section level3">
 <h3>2.3 Performance Metrics</h3>
-<p>Performance metrics of interest were accuracy, accuracy biased in favour of specificity, discrimination, and calibration.</p>
+<p>We assess model performance across three categories: accuracy, discrimination and calibration. Accuracy is assessed using total accuracy and weighted balanced accuracy (Introduced in Section 2.1).</p>
+<ul>
+<li>Accuracy: <span class="math inline">\(\frac{\mathrm{TP} + \mathrm{TN}}{N}\)</span></li>
+<li>Weighted Balanced Accuracy: <span class="math inline">\(\frac{1.5*Sp + Sn}{2.5}\)</span></li>
+</ul>
+<p>In these formulae, TP reflects the number of true positives, TN reflects the number of true negatives, N is the total number of observations in the sample, Sn represents sensitivity and Sp represents specificty. Discrimination is assessed via area under the receiver operator curve (AUROC). Finally, we assess calibration visually by means of flexible calibration curves.</p>
 </div>
 </div>
 <div id="results" class="section level2">
