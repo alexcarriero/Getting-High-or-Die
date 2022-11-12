@@ -66,7 +66,9 @@ library(class)
 library(ISLR)
 library(Matrix)
 library(kableExtra)
+library(stargazer)
 ```
+
 
 ## 1. Introduction
 
@@ -592,6 +594,15 @@ rbind(
   kable_styling("striped") 
 ```
 
+```{r}
+options(scipen = n)
+lr_final <- glm(pred5[1,1], family=binomial, data=beginner)
+lr_final_resuts <- summary(lr_final)
+
+stargazer(lr_final, odd.ratio = T, type = "text", single.row = TRUE)
+
+round(exp(lr_final_resuts$coefficients[,1]),1)
+```
 
 ```{r}
 # assessing test set predictions
