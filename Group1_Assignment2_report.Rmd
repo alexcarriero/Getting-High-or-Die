@@ -698,14 +698,12 @@ probs %>%
   ggplot(aes(x = value, y = class, color = variable, fill = variable)) + 
   geom_abline(slope = 1, intercept = 0, size = 1) +
   geom_smooth(method = stats::loess, se = TRUE) +
-  scale_x_continuous(breaks = seq(0, 1, 0.1)) +
-  scale_y_continuous(breaks = seq(0, 1, 0.1)) +
-  scale_fill_brewer(palette = "Set2") +
-  scale_color_brewer(palette = "Set2") +
+  scale_fill_brewer(palette = "Set2",  labels=c("Decision Tree","Logistic Regression","Random Forest","XGBoost")) +
+  scale_color_brewer(palette = "Set2", labels=c("Decision Tree","Logistic Regression","Random Forest","XGBoost")) +
   xlab("Estimated Probability") +
   ylab("Observed Proportion") +
   labs(color = "Model", fill = "Model") +
-  ggtitle("Flexible Model Calibration") + 
+  ggtitle("Flexible Calibration Curves") + 
   theme_minimal()
 ```
 
@@ -721,7 +719,7 @@ Additionally, we considered calibration. It appears logistic regression and rand
 
 ### 3.3.1 Logistic Regression 
 
-A benefit of performing logistic regression is that parameter estimates are interpretable  **The final logistic model is:** class ~ cap.shape + bruises + stalk.shape + ring.number + habitat. The output of the model, can be seen below. There are insignificant predictors in all predictors, this can mainly be explained by the small number of observations in these predictor groups. The significant predictors will be discussed.
+A benefit of performing logistic regression is that parameter estimates are interpretable.  **The final logistic model is:** class ~ cap.shape + bruises + stalk.shape + ring.number + habitat. The output of logistic regression is the log odds ratio, this is a metric which is hard to interpret. The odds ratio (OR) is easier to interpret and can be obtained by taking the exponent of the log odds ratio. If the odds ratio is larger (lower) than 1 then that group is associated with higher (lower) odds of the outcome. The output of the model, can be seen below. 
 
 ```{r, echo  = F}
 options(scipen = n)
@@ -731,7 +729,7 @@ lr_final_resuts <- summary(lr_final)
 stargazer(lr_final, odd.ratio = T, type = "text", single.row = TRUE)
 ```
 
-The output of logistic regression is the log odds ratio, this is a metric which is hard to interpret. The odds ratio (OR) is easier to interpret and can be obtained by taking the exponent of the log odds ratio. If the odds ratio is larger (lower) than 1 then that group is associated with higher (lower) odds of the outcome.
+From the output we see that there are some insignificant comparisons in nearly all predictors.  For instance, the odds ratio between convex capshape and conical cap shape is not significantly different from one.  This can mainly be explained by the small number of observations in these subgroups (only 3 observations with a conical capshape). The significant comparisons are presented in the Table 4. 
 
 ```{r}
 table3 <- tibble(
@@ -745,32 +743,21 @@ table3 %>%
   kbl(format = "html", caption = "Odd ratio's of significant predictors") %>% 
   kable_styling("striped") 
 ```
-As can be seen from the table above if a mushroom has a cap-shaped flat/knobbed or there are no bruises then the mushroom is associated with lower odds of being poisonous compared to their baseline groups. For mushrooms with bell cap shapes, stalk shapes that tare tapering, two rings and live in a grass or woods habitat they are associated with higher odds of being poisonous compared to their baseline groups.\
+As can be seen from the Table 4,  if a mushroom has a cap-shaped flat/knobbed or there are no bruises then the mushroom is associated with lower odds of being poisonous compared to their baseline groups. For mushrooms with bell cap shapes, stalk shapes that tare tapering, two rings and live in a grass or woods habitat they are associated with higher odds of being poisonous compared to their baseline groups.\
 
 ### 3.3.2 Decision Tree
+
+An advantage of using a decision tree is that this model is easy to explain.  Given that the end goal of our model development is to present information to hikers of all levels, a decision tree diagram is an excellent tool that can be repeated utilized by hikers without the need for any technology.  
+
 ```{r}
 rpart.plot(dt)
-```
-
-### 3.3.3 Random Forest
-```{r}
-tibble(
-  var = rownames(rf_importance),
-  imp = rf_importance
-)%>%
-  ggplot(aes(x = var, y = rf_importance)) +
-  geom_bar(stat = "identity", width = 0.05, fill = "skyblue")+
-  geom_point( col = "lightsalmon2", size = 3) + 
-  coord_flip() + 
-  xlab("Importance") +
-  ylab("Predictor") +
-  ggtitle("Importance of predictors from random forest model") + 
-  theme_minimal()
 ```
 
 
 # 4. Discussion
 
 We aimed to identify a model predicting mushroom edibility. We performed logistic regression to identify the best set of predictors, then compared the performance of logistic regression with tree-based methods. It appeared that XGBoost performed the best on the metrics of interest; additionally, it slightly underestimated the probability of a mushroom being edible, while other models were severely miscalibrated. We thus conclude that XGBoost is the best model.\
+\
+Our end goal was to develop an app that could be used by hikers.  As the basis for this app, we would recommend XGBoost.  Since the performance of the basic decision tree was not much worse than that of XGBoost, we can offer an alternative for hikers who wish to enjoy nature without technology by providing a print out of the decision tree. 
 
-**something something about the others having interpretability but xgboost has best performance**
+
