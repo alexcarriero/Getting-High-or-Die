@@ -48,4 +48,4 @@ TODO
 	- train dataset
 	- test dataset
 - Fit beginner models & see if we can have less predictors
-	Meeting about this 02/11 after class (Judith will bring unstable unicorns)
+	Meeting about this 02/11 after class
