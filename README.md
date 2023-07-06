@@ -22,4 +22,4 @@ Getting-High-or-Die/
 
 |-- NotesFirstMeeting.txt          - Notes taken by Judith Neve during the first meeting defining the aim of the project and initial wrangling steps
 
-|-- README.html                    - Readme file containing information about the project
+|-- README.md                      - Readme file containing information about the project
